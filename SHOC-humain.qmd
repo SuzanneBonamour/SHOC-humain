@@ -27,13 +27,17 @@ library(DT)
 library(ggplot2)
 library(MASS)
 library(forcats)
+library(ordinal)
 ```
 
 ```{r}
 load("SHOC-humain.RData")
+sort(sapply(ls(), function(x) object.size(get(x))), decreasing = TRUE)
+rm(dt_model_1 )
+rm(list = ls(pattern = "^X_"))
 ```
 
-# data
+# \*\*\* data
 
 ## quiz
 
@@ -831,7 +835,7 @@ rm(avis, avis_large, bagueurs, cocheurs, cocheurs2, departement_info, longTermTr
    species, species_2, tendances, tendances_stoc)
 ```
 
-# exploration données
+# \*\*\* exploration données
 
 ```{r}
 #| echo: false
@@ -894,9 +898,554 @@ dataset$comparaison_niv1 <- as.factor(dataset$comparaison_niv1)
 dataset$comparaison_niv2 <- as.factor(dataset$comparaison_niv2)
 ```
 
-# Chi² : tendances vs hasard
+# \*\*\* ordinales
 
-## tendance shoc
+## niv 1
+
+### données
+
+```{r}
+#| include: false
+
+dt1 <- dataset %>% 
+  dplyr::select("email","espece","avis_niv1","migrateur","regime",
+                "detectabilite","gregaire","popularite",
+                "abondance_log","departement","sexe",
+                "anciennete","region","bioregion","expert",
+                "tendances_stoc",
+                "tendance_shoc_niv1") %>% 
+  filter(avis_niv1 != "Fluctuante",
+         avis_niv1 != "Incertain") %>% 
+  filter(tendance_shoc_niv1 != "Fluctuante",
+         tendance_shoc_niv1 != "Incertain") %>%
+  na.omit()
+
+unique(dt1$avis_niv1)
+
+dt1 <- dt1 %>%
+  mutate(
+    avis_niv1 = factor(
+      avis_niv1,
+      levels = c("Déclin" ,"Stable", "Augmentation"),
+      ordered = TRUE
+    ),
+    tendance_shoc_niv1 = factor(
+      tendance_shoc_niv1,
+      levels = c("Déclin" ,"Stable", "Augmentation"),
+      ordered = TRUE
+    )
+  ) %>% 
+  na.omit()
+```
+
+### aléatoire
+
+```{r}
+#| eval: false
+#| include: false
+
+m_n1.1 <- clmm(avis_niv1 ~ 1 + 
+                    (1 | email), data = dt1, link = "logit", Hess = TRUE, na.action = na.omit)
+m_n1.2 <- clmm(avis_niv1 ~ 1 + 
+                    (1 | region), data = dt1, link = "logit", Hess = TRUE, na.action = na.omit)
+m_n1.3 <- clmm(avis_niv1 ~ 1 + 
+                    (1 | bioregion), data = dt1, link = "logit", Hess = TRUE, na.action = na.omit)
+m_n1.4 <- clmm(avis_niv1 ~ 1 + 
+                    (1 | departement), data = dt1, link = "logit", Hess = TRUE, na.action = na.omit)
+m_n1.5 <- clmm(avis_niv1 ~ 1 + 
+                     (1 | email) + (1 | region), data = dt1, link = "logit", Hess = TRUE, na.action = na.omit)
+m_n1.6 <- clmm(avis_niv1 ~ 1 + 
+                     (1 | email) + (1 | bioregion), data = dt1, link = "logit", Hess = TRUE, na.action = na.omit)
+m_n1.7 <- clmm(avis_niv1 ~ 1 + 
+                     (1 | email) + (1 | departement), data = dt1, link = "logit", Hess = TRUE, na.action = na.omit)
+```
+
+```{r}
+#| echo: false
+AIC_dt_n1_aleatoire <- as.data.frame(AIC(m_n1.1, m_n1.2, m_n1.3, m_n1.4, m_n1.5, m_n1.6, m_n1.7))
+
+AIC_dt_n1_aleatoire <- AIC_dt_n1_aleatoire %>% 
+  arrange(AIC) ; AIC_dt_n1_aleatoire
+
+summary(m_n1.1)
+```
+
+### base
+
+```{r}
+#| eval: false
+#| include: false
+m_n1_base <- clmm(avis_niv1 ~ tendance_shoc_niv1 + (1 | email), data = dt1, link = "logit", Hess = TRUE)
+```
+
+```{r}
+#| echo: false
+summary(m_n1_base)
+```
+
+### (espece)
+
+```{r}
+#| eval: false
+#| include: false
+m_n1_esp <- clmm(avis_niv1 ~ tendance_shoc_niv1*espece + (1 | email), data = dt1, link = "logit", Hess = TRUE)
+```
+
+```{r}
+#| echo: false
+summary(m_n1_esp)
+```
+
+### trait
+
+```{r}
+#| eval: false
+#| include: false
+
+# abondance *** int ***
+m_n1_trait_1 <- clmm(avis_niv1 ~ tendance_shoc_niv1 + abondance_log + (1 | email), data = dt1, link = "logit", Hess = TRUE)
+anova(m_n1_trait_1, m_n1_base)
+m_n1_trait_1int <- clmm(avis_niv1 ~ tendance_shoc_niv1*abondance_log + (1 | email), data = dt1, link = "logit", Hess = TRUE)
+anova(m_n1_trait_1, m_n1_trait_1int)
+
+# popularite *** int ***
+m_n1_trait_2 <- clmm(avis_niv1 ~ tendance_shoc_niv1 + popularite + (1 | email), data = dt1, link = "logit", Hess = TRUE)
+anova(m_n1_trait_2, m_n1_base)
+m_n1_trait_2int <- clmm(avis_niv1 ~ tendance_shoc_niv1*popularite + (1 | email), data = dt1, link = "logit", Hess = TRUE)
+anova(m_n1_trait_2, m_n1_trait_2int) 
+
+# detectabilite *** int ***
+m_n1_trait_3 <- clmm(avis_niv1 ~ tendance_shoc_niv1 + detectabilite + (1 | email), data = dt1, link = "logit", Hess = TRUE)
+anova(m_n1_trait_3, m_n1_base)
+m_n1_trait_3int <- clmm(avis_niv1 ~ tendance_shoc_niv1*detectabilite + (1 | email), data = dt1, link = "logit", Hess = TRUE)
+anova(m_n1_trait_3, m_n1_trait_3int) 
+
+# regime *** int ***
+m_n1_trait_4 <- clmm(avis_niv1 ~ tendance_shoc_niv1 + regime + (1 | email), data = dt1, link = "logit", Hess = TRUE)
+anova(m_n1_trait_4, m_n1_base)
+m_n1_trait_4int <- clmm(avis_niv1 ~ tendance_shoc_niv1*regime + (1 | email), data = dt1, link = "logit", Hess = TRUE)
+anova(m_n1_trait_4, m_n1_trait_4int)
+
+# migrateur *** int ***
+m_n1_trait_5 <- clmm(avis_niv1 ~ tendance_shoc_niv1 + migrateur + (1 | email), data = dt1, link = "logit", Hess = TRUE)
+anova(m_n1_trait_5, m_n1_base)
+m_n1_trait_5int <- clmm(avis_niv1 ~ tendance_shoc_niv1*migrateur + (1 | email), data = dt1, link = "logit", Hess = TRUE)
+anova(m_n1_trait_5, m_n1_trait_5int) 
+
+# gregaire *** int ***
+m_n1_trait_6 <- clmm(avis_niv1 ~ tendance_shoc_niv1 + gregaire + (1 | email), data = dt1, link = "logit", Hess = TRUE)
+anova(m_n1_trait_6, m_n1_base)
+m_n1_trait_6int <- clmm(avis_niv1 ~ tendance_shoc_niv1*gregaire + (1 | email), data = dt1, link = "logit", Hess = TRUE)
+anova(m_n1_trait_6, m_n1_trait_6int) 
+
+# all
+m_n1_trait_all <- clmm(avis_niv1 ~ tendance_shoc_niv1 + 
+                    abondance_log + popularite + detectabilite + regime + migrateur + gregaire +
+                    (1 | email), data = dt1, link = "logit", Hess = TRUE)
+m_n1_trait_allint <- clmm(avis_niv1 ~ tendance_shoc_niv1 + 
+                    abondance_log + regime + popularite + detectabilite + migrateur + gregaire + 
+                    tendance_shoc_niv1:(abondance_log + popularite + detectabilite + regime + migrateur + gregaire) + 
+                    (1 | email), data = dt1, link = "logit", Hess = TRUE)
+```
+
+```{r}
+#| echo: false
+AIC_dt_trait <- as.data.frame(AIC(m_n1_base, 
+                                  m_n1_trait_1, m_n1_trait_2, m_n1_trait_3, m_n1_trait_4, m_n1_trait_5, m_n1_trait_6,
+                                  m_n1_trait_3int, m_n1_trait_4int, m_n1_trait_5int, m_n1_trait_6int, m_n1_trait_all,
+                                  m_n1_trait_allint))
+
+AIC_dt_trait <- AIC_dt_trait %>% 
+  arrange(AIC) ; AIC_dt_trait
+
+summary(m_n1_trait_allint)
+```
+
+### participant
+
+```{r}
+#| eval: false
+#| include: false
+
+# sexe *** int ***
+m_n1_participant_1 <- clmm(avis_niv1 ~ tendance_shoc_niv1 + sexe + 
+                                (1 | email), data = dt1, link = "logit", Hess = TRUE)
+anova(m_n1_participant_1, m_n1_base)
+m_n1_participant_1int <- clmm(avis_niv1 ~ tendance_shoc_niv1*sexe + 
+                                   (1 | email), data = dt1, link = "logit", Hess = TRUE)
+anova(m_n1_participant_1, m_n1_participant_1int) 
+
+# anciennete int ***
+m_n1_participant_2 <- clmm(avis_niv1 ~ tendance_shoc_niv1 + anciennete + 
+                                (1 | email), data = dt1, link = "logit", Hess = TRUE)
+anova(m_n1_participant_2, m_n1_base)
+m_n1_participant_2int <- clmm(avis_niv1 ~ tendance_shoc_niv1*anciennete + 
+                                   (1 | email), data = dt1, link = "logit", Hess = TRUE)
+anova(m_n1_participant_2, m_n1_participant_2int) 
+
+# expert int ***
+m_n1_participant_3 <- clmm(avis_niv1 ~ tendance_shoc_niv1 + expert + 
+                                (1 | email), data = dt1, link = "logit", Hess = TRUE)
+anova(m_n1_participant_3, m_n1_base)
+m_n1_participant_3int <- clmm(avis_niv1 ~ tendance_shoc_niv1*expert + 
+                                   (1 | email), data = dt1, link = "logit", Hess = TRUE)
+anova(m_n1_participant_3, m_n1_participant_3int) 
+
+# all 
+m_n1_participant_all <- clmm(avis_niv1 ~ tendance_shoc_niv1 +
+                    sexe + anciennete + expert +
+                    (1 | email), data = dt1, link = "logit", Hess = TRUE)
+m_n1_participant_allint <- clmm(avis_niv1 ~ tendance_shoc_niv1 +
+                    sexe + anciennete + expert + 
+                    tendance_shoc_niv1:(sexe + anciennete + expert) +
+                    (1 | email), data = dt1, link = "logit", Hess = TRUE)
+
+```
+
+```{r}
+#| echo: false
+AIC_dt_n1_participant <- as.data.frame(AIC(m_n1_base, 
+                                m_n1_participant_1, m_n1_participant_2, m_n1_participant_3,
+                                m_n1_participant_1int, m_n1_participant_2int, m_n1_participant_3int,
+                                m_n1_participant_all, m_n1_participant_allint))
+
+AIC_dt_n1_participant <- AIC_dt_n1_participant %>% 
+  arrange(AIC) ; AIC_dt_n1_participant
+
+summary(m_n1_participant_allint)
+```
+
+### espece + participant
+
+```{r}
+#| eval: false
+#| include: false
+m_n1_trait_participant_allint <- clmm(avis_niv1 ~ tendance_shoc_niv1 + 
+                    abondance_log + regime + popularite + detectabilite + migrateur + gregaire + 
+                      sexe + anciennete + expert +
+                    tendance_shoc_niv1:(abondance_log + popularite + detectabilite + regime + migrateur + gregaire + sexe + anciennete + expert) +
+                    (1 | email), data = dt1, link = "logit", Hess = TRUE)
+m_n1_trait_participant_allint_1 <- clmm(avis_niv1 ~ tendance_shoc_niv1 + 
+                    abondance_log + regime + popularite + detectabilite + migrateur + gregaire + 
+                      sexe + anciennete + expert +
+                    tendance_shoc_niv1:(abondance_log + popularite + detectabilite + regime + migrateur + gregaire) +
+                    (1 | email), data = dt1, link = "logit", Hess = TRUE)
+m_n1_trait_participant_allint_2 <- clmm(avis_niv1 ~ tendance_shoc_niv1 + 
+                    abondance_log + regime + popularite + detectabilite + migrateur + gregaire + 
+                      sexe + anciennete + expert +
+                    tendance_shoc_niv1:(abondance_log + popularite + detectabilite + regime + migrateur + gregaire + sexe) +
+                    (1 | email), data = dt1, link = "logit", Hess = TRUE)
+m_n1_trait_participant_allint_3 <- clmm(avis_niv1 ~ tendance_shoc_niv1 + 
+                    abondance_log + regime + popularite + detectabilite + migrateur + gregaire + 
+                      sexe + anciennete + expert +
+                    tendance_shoc_niv1:(abondance_log + popularite + detectabilite + regime + migrateur + gregaire + sexe + anciennete) +
+                    (1 | email), data = dt1, link = "logit", Hess = TRUE)
+m_n1_trait_participant_allint_4 <- clmm(avis_niv1 ~ tendance_shoc_niv1 + 
+                    abondance_log + regime + popularite + detectabilite + migrateur + gregaire + 
+                      sexe + anciennete + expert +
+                    tendance_shoc_niv1:(abondance_log + popularite + detectabilite + regime + migrateur + gregaire + sexe + expert) +
+                    (1 | email), data = dt1, link = "logit", Hess = TRUE)
+m_n1_trait_participant_allint_5 <- clmm(avis_niv1 ~ tendance_shoc_niv1 + 
+                    abondance_log + regime + popularite + detectabilite + migrateur + gregaire + 
+                      sexe + anciennete + expert +
+                    tendance_shoc_niv1:(sexe + anciennete + expert) +
+                    (1 | email), data = dt1, link = "logit", Hess = TRUE)
+
+```
+
+```{r}
+#| echo: false
+AIC_dt_all_n1 <- as.data.frame(AIC(m_n1_base,
+                                   m_n1_trait_1, m_n1_trait_2, m_n1_trait_3, m_n1_trait_4, m_n1_trait_5, m_n1_trait_6,
+                                   m_n1_trait_1int, m_n1_trait_2int, m_n1_trait_3int, m_n1_trait_4int, m_n1_trait_5int, m_n1_trait_int,
+                                   m_n1_trait_all, m_n1_trait_allint, 
+                                   m_n1_participant_1, m_n1_participant_2, m_n1_participant_3,
+                                   m_n1_participant_1int, m_n1_participant_2int, m_n1_participant_3int,
+                                   m_n1_participant_all, m_n1_participant_allint,
+                                   m_n1_trait_participant_allint_1, m_n1_trait_participant_allint_2, m_n1_trait_participant_allint_3,
+                                   m_n1_trait_participant_allint_4, m_n1_trait_participant_allint_5))
+
+AIC_dt_all_n1 <- AIC_dt_all_n1 %>% 
+  arrange(AIC) ; AIC_dt_all_n1
+
+summary(m_n1_trait_participant_allint_3)
+```
+
+## niv 2
+
+### données
+
+```{r}
+#| include: false
+
+dt2 <- dataset %>% 
+  dplyr::select("email","espece","avis_niv2","migrateur","regime",
+                "detectabilite","gregaire","popularite",
+                "abondance_log","departement","sexe",
+                "anciennete","region","bioregion","expert",
+                "tendances_stoc",
+                "tendance_shoc_niv2") %>% 
+  filter(avis_niv2 != "Fluctuante",
+         avis_niv2 != "Incertain") %>% 
+  filter(tendance_shoc_niv2 != "Fluctuante",
+         tendance_shoc_niv2 != "Incertain") %>%
+  na.omit()
+
+unique(dt2$avis_niv2)
+
+dt2 <- dt2 %>%
+  mutate(
+    avis_niv2 = factor(
+      avis_niv2,
+      levels = c("Déclin fort", "Déclin modéré à fort", "Déclin modéré", 
+                 "Stable", 
+                 "Augmentation modéré", "Augmentation modéré à fort", "Augmentation fort"),
+      ordered = TRUE
+    ),
+    tendance_shoc_niv2 = factor(
+      tendance_shoc_niv2,
+      levels = c("Déclin fort", "Déclin modéré à fort", "Déclin modéré", 
+                 "Stable", 
+                 "Augmentation modéré", "Augmentation modéré à fort", "Augmentation fort"),
+      ordered = TRUE
+    )
+  ) %>% 
+  na.omit()
+```
+
+### aléatoire
+
+```{r}
+#| eval: false
+#| include: false
+
+m_n2.1 <- clmm(avis_niv2 ~ 1 + (1 | email), data = dt2, link = "logit", Hess = TRUE, na.action = na.omit)
+m_n2.2 <- clmm(avis_niv2 ~ 1 + (1 | region), data = dt2, link = "logit", Hess = TRUE, na.action = na.omit)
+m_n2.3 <- clmm(avis_niv2 ~ 1 + (1 | bioregion), data = dt2, link = "logit", Hess = TRUE, na.action = na.omit)
+m_n2.4 <- clmm(avis_niv2 ~ 1 + (1 | departement), data = dt2, link = "logit", Hess = TRUE, na.action = na.omit)
+m_n2.5 <- clmm(avis_niv2 ~ 1 + (1 | email) + (1 | region), data = dt2, link = "logit", Hess = TRUE, na.action = na.omit)
+m_n2.6 <- clmm(avis_niv2 ~ 1 + (1 | email) + (1 | bioregion), data = dt2, link = "logit", Hess = TRUE, na.action = na.omit)
+m_n2.7 <- clmm(avis_niv2 ~ 1 + (1 | email) + (1 | departement), data = dt2, link = "logit", Hess = TRUE, na.action = na.omit)
+```
+
+```{r}
+#| echo: false
+
+AIC_dt_n2_aleatoire <- as.data.frame(AIC(m_n2.1, m_n2.2, m_n2.3, m_n2.4, m_n2.5, m_n2.6, m_n2.7))
+
+AIC_dt_n2_aleatoire <- AIC_dt_n2_aleatoire %>% 
+  arrange(AIC) ; AIC_dt_n2_aleatoire
+
+summary(m_n2.01)
+```
+
+### base !!!!!!!!!!!!!! reprendre ici pour mettre au propre
+
+```{r}
+#| eval: false
+#| include: false
+m_niv_2_1 <- clmm(avis_niv2 ~ tendance_shoc_niv2 + (1 | email) + (1 | departement), data = dt2, link = "logit", Hess = TRUE)
+```
+
+```{r}
+#| echo: false
+summary(m_niv_2_1)
+```
+
+### (espece)
+
+```{r}
+#| eval: false
+#| include: false
+m_niv_2_esp <- clmm(avis_niv2 ~ tendance_shoc_niv2*espece + (1 | email) + (1 | departement), data = dt2, link = "logit", Hess = TRUE)
+```
+
+```{r}
+#| echo: false
+summary(m_niv_2_esp)
+```
+
+### trait
+
+```{r}
+#| eval: false
+#| include: false
+# abondance ***
+m_niv_2_2 <- clmm(avis_niv2 ~ tendance_shoc_niv2 + abondance_log + (1 | email) + (1 | departement), data = dt2, link = "logit", Hess = TRUE)
+anova(m_niv_2_2, m_niv_2_1)
+# m_niv_2_2int <- clmm(avis_niv2 ~ tendance_shoc_niv2*abondance_log + (1 | email) + (1 | departement), data = dt2, link = "logit", Hess = TRUE)
+# anova(m_niv_2_2, m_niv_2_2int)
+
+# popularite *** int ***
+m_niv_2_3 <- clmm(avis_niv2 ~ tendance_shoc_niv2 + popularite + (1 | email) + (1 | departement), data = dt2, link = "logit", Hess = TRUE)
+anova(m_niv_2_3, m_niv_2_1)
+m_niv_2_3int <- clmm(avis_niv2 ~ tendance_shoc_niv2*popularite + (1 | email) + (1 | departement), data = dt2, link = "logit", Hess = TRUE)
+anova(m_niv_2_3, m_niv_2_3int) 
+
+# detectabilite *** int ***
+m_niv_2_4 <- clmm(avis_niv2 ~ tendance_shoc_niv2 + detectabilite + (1 | email) + (1 | departement), data = dt2, link = "logit", Hess = TRUE)
+anova(m_niv_2_4, m_niv_2_1)
+m_niv_2_4int <- clmm(avis_niv2 ~ tendance_shoc_niv2*detectabilite + (1 | email) + (1 | departement), data = dt2, link = "logit", Hess = TRUE)
+anova(m_niv_2_4, m_niv_2_4int) 
+
+# regime ***
+m_niv_2_5 <- clmm(avis_niv2 ~ tendance_shoc_niv2 + regime + (1 | email) + (1 | departement), data = dt2, link = "logit", Hess = TRUE)
+anova(m_niv_2_5, m_niv_2_1)
+m_niv_2_5int <- clmm(avis_niv2 ~ tendance_shoc_niv2*regime + (1 | email) + (1 | departement), data = dt2, link = "logit", Hess = TRUE)
+anova(m_niv_2_5, m_niv_2_5int)
+
+# migrateur *** int ***
+m_niv_2_6 <- clmm(avis_niv2 ~ tendance_shoc_niv2 + migrateur + (1 | email) + (1 | departement), data = dt2, link = "logit", Hess = TRUE)
+anova(m_niv_2_6, m_niv_2_1)
+m_niv_2_6int <- clmm(avis_niv2 ~ tendance_shoc_niv2*migrateur + (1 | email) + (1 | departement), data = dt2, link = "logit", Hess = TRUE)
+anova(m_niv_2_6, m_niv_2_6int) 
+
+# gregaire *** int ***
+m_niv_2_7 <- clmm(avis_niv2 ~ tendance_shoc_niv2 + gregaire + (1 | email) + (1 | departement), data = dt2, link = "logit", Hess = TRUE)
+anova(m_niv_2_7, m_niv_2_1)
+m_niv_2_7int <- clmm(avis_niv2 ~ tendance_shoc_niv2*gregaire + (1 | email) + (1 | departement), data = dt2, link = "logit", Hess = TRUE)
+anova(m_niv_2_7, m_niv_2_7int) 
+
+# all
+m_niv_2_all <- clmm(avis_niv2 ~ tendance_shoc_niv2 + 
+                    abondance_log + popularite + detectabilite + regime + migrateur + gregaire +
+                    (1 | email) + (1 | departement), data = dt2, link = "logit", Hess = TRUE)
+m_niv_2_allint <- clmm(avis_niv2 ~ tendance_shoc_niv2 + 
+                    abondance_log + regime + 
+                      popularite + detectabilite + migrateur + gregaire + 
+                    tendance_shoc_niv2:(popularite + detectabilite) + 
+                    (1 | email) + (1 | departement), data = dt2, link = "logit", Hess = TRUE)
+m_niv_2_allint_2 <- clmm(avis_niv2 ~ tendance_shoc_niv2 + 
+                    abondance_log + regime + 
+                      popularite + detectabilite + migrateur + gregaire + 
+                    tendance_shoc_niv2:(popularite + migrateur) + 
+                    (1 | email) + (1 | departement), data = dt2, link = "logit", Hess = TRUE)
+m_niv_2_allint_3 <- clmm(avis_niv2 ~ tendance_shoc_niv2 + 
+                    abondance_log + regime + 
+                      popularite + detectabilite + migrateur + gregaire + 
+                    tendance_shoc_niv2:(popularite + gregaire) + 
+                    (1 | email) + (1 | departement), data = dt2, link = "logit", Hess = TRUE)
+# m_niv_2_allint_4 <- clmm(avis_niv2 ~ tendance_shoc_niv2 + 
+#                     abondance_log + regime + 
+#                       popularite + detectabilite + migrateur + gregaire + 
+#                     tendance_shoc_niv2:(detectabilite + migrateur) + 
+#                     (1 | email) + (1 | departement), data = dt2, link = "logit", Hess = TRUE)
+# m_niv_2_allint_5 <- clmm(avis_niv2 ~ tendance_shoc_niv2 + 
+#                     abondance_log + regime + 
+#                       popularite + detectabilite + migrateur + gregaire + 
+#                     tendance_shoc_niv2:(detectabilite + gregaire) + 
+#                     (1 | email) + (1 | departement), data = dt2, link = "logit", Hess = TRUE)
+# m_niv_2_allint_6 <- clmm(avis_niv2 ~ tendance_shoc_niv2 + 
+#                     abondance_log + regime + 
+#                       popularite + detectabilite + migrateur + gregaire + 
+#                     tendance_shoc_niv2:(migrateur + gregaire) + 
+#                     (1 | email) + (1 | departement), data = dt2, link = "logit", Hess = TRUE)
+
+```
+
+```{r}
+#| echo: false
+
+AIC_dt_trait_niv_2 <- as.data.frame(AIC(m_niv_2_1, m_niv_2_2, m_niv_2_3, m_niv_2_4, m_niv_2_5, m_niv_2_6,
+    m_niv_2_3int, m_niv_2_4int, m_niv_2_5int, m_niv_2_6int,
+    m_niv_2_all, 
+    m_niv_2_allint, 
+    m_niv_2_allint_2, m_niv_2_allint_3
+    # m_niv_2_allint_4, m_niv_2_allint_5, m_niv_2_allint_6
+    ))
+
+AIC_dt_trait_niv_2 <- AIC_dt_trait_niv_2 %>% 
+  arrange(AIC) ; AIC_dt_trait_niv_2
+
+summary(m_niv_2_allint)
+```
+
+### participant
+
+```{r}
+#| eval: false
+#| include: false
+# sexe *** int ***
+m_niv_2_participant_1 <- clmm(avis_niv2 ~ tendance_shoc_niv2 + sexe + 
+                                (1 | email) + (1 | departement), data = dt2, link = "logit", Hess = TRUE)
+anova(m_niv_2_participant_1, m_niv_2_1)
+m_niv_2_participant_1int <- clmm(avis_niv2 ~ tendance_shoc_niv2*anciennete + 
+                                   (1 | email) + (1 | departement), data = dt2, link = "logit", Hess = TRUE)
+anova(m_niv_2_participant_1, m_niv_2_participant_1int) 
+
+# anciennete int ***
+m_niv_2_participant_2 <- clmm(avis_niv2 ~ tendance_shoc_niv2 + anciennete + 
+                                (1 | email) + (1 | departement), data = dt2, link = "logit", Hess = TRUE)
+anova(m_niv_2_participant_2, m_niv_2_1)
+m_niv_2_participant_2int <- clmm(avis_niv2 ~ tendance_shoc_niv2*anciennete + 
+                                   (1 | email) + (1 | departement), data = dt2, link = "logit", Hess = TRUE)
+anova(m_niv_2_participant_2, m_niv_2_participant_2int) 
+
+# expert int ***
+m_niv_2_participant_3 <- clmm(avis_niv2 ~ tendance_shoc_niv2 + expert + 
+                                (1 | email) + (1 | departement), data = dt2, link = "logit", Hess = TRUE)
+anova(m_niv_2_participant_3, m_niv_2_1)
+m_niv_2_participant_3int <- clmm(avis_niv2 ~ tendance_shoc_niv2*expert + 
+                                   (1 | email) + (1 | departement), data = dt2, link = "logit", Hess = TRUE)
+anova(m_niv_2_participant_3, m_niv_2_participant_3int) 
+
+# all 
+m_niv_2_participant_all <- clmm(avis_niv2 ~ tendance_shoc_niv2 +
+                    sexe + anciennete + expert +
+                    (1 | email) + (1 | departement), data = dt2, link = "logit", Hess = TRUE)
+m_niv_2_participant_allint <- clmm(avis_niv2 ~ tendance_shoc_niv2 +
+                    sexe + anciennete + expert + 
+                    tendance_shoc_niv2:(sexe + anciennete + expert) +
+                    (1 | email) + (1 | departement), data = dt2, link = "logit", Hess = TRUE)
+```
+
+```{r}
+#| echo: false
+AIC_dt_niv_2_participant <- as.data.frame(AIC(m_niv_2_1, 
+                                m_niv_2_participant_1, m_niv_2_participant_2, m_niv_2_participant_3,
+                                m_niv_2_participant_1int, m_niv_2_participant_2int, m_niv_2_participant_3int,
+                                m_niv_2_participant_all, m_niv_2_participant_allint))
+
+AIC_dt_niv_2_participant <- AIC_dt_niv_2_participant %>% 
+  arrange(AIC) ; AIC_dt_niv_2_participant
+
+summary(m_niv_2_participant_allint)
+```
+
+### espece + participant
+
+```{r}
+#| eval: false
+#| include: false
+m_niv_2_trait_participant_allint <- clmm(avis_niv2 ~ tendance_shoc_niv2 + 
+                    abondance_log + popularite + detectabilite + migrateur + gregaire + regime +  sexe + anciennete + expert + 
+                    tendance_shoc_niv2:(popularite + detectabilite + sexe + anciennete + expert) + 
+                    (1 | email) + (1 | departement), data = dt2, link = "logit", Hess = TRUE)
+```
+
+```{r}
+#| echo: false
+AIC_dt_trait_niv_2 <- as.data.frame(AIC(m_niv_2_1, 
+                                m_niv_2_participant_1, m_niv_2_participant_2, m_niv_2_participant_3,
+                                m_niv_2_participant_1int, m_niv_2_participant_2int,
+                                m_niv_2_participant_3int,
+                                m_niv_2_participant_all, m_niv_2_participant_allint,
+                                m_niv_2_2, m_niv_2_3, m_niv_2_4, m_niv_2_5, m_niv_2_6,
+                                m_niv_2_3int, m_niv_2_4int, m_niv_2_5int, m_niv_2_6int,
+                                m_niv_2_all, 
+                                m_niv_2_allint, 
+                                m_niv_2_allint_2, m_niv_2_allint_3,
+                                m_niv_2_trait_participant_allint))
+
+AIC_dt_trait_niv_2 <- AIC_dt_trait_niv_2 %>% 
+  arrange(AIC) ; AIC_dt_trait_niv_2
+
+summary(m_niv_2_allint)
+```
+
+# \*\*\* Chi²
+
+## shoc vs hasard
 
 ```{r}
 #| echo: false
@@ -917,7 +1466,7 @@ data.frame(
 
 p-value \< 0.05 → la distribution est significativement différente du hasard
 
-## avis niv 1
+## niv 1 vs hasard
 
 ```{r}
 #| echo: false
@@ -938,7 +1487,7 @@ data.frame(
 
 p-value \< 0.05 → la distribution est significativement différente du hasard
 
-# Chi² : tendance shoc vs avis niv 1
+## shoc vs niv 1
 
 ```{r}
 categories_communes <- intersect(names(obs_shoc), names(obs_avis_niv1))
@@ -1046,9 +1595,9 @@ AVIS → profil nettement plus stable, Stable ≈ 40 %, moins d’Augmentation
 
 Chez les participant.es, biais vers le stable, et peu d'aumgmentation. En demandant de répondre pour des tendances, on pense moins facilement à répondre stable ? Et oin parle beaucoup des déclins (média, crise ecolo...), mais peu des augmentations, donc les gens n'y pensent pas ?
 
-# proportion identique vs different
+# \*\*\* proportion identique vs different
 
-## niveau 1
+## niv 1
 
 ```{r}
 #| echo: false
@@ -1066,7 +1615,7 @@ dt_prop_niv_1_DA$prop <- dt_prop_niv_1_DA$Freq / sum(dt_prop_niv_1_DA$Freq)
 dt_prop_niv_1_DA
 ```
 
-## niveau 2
+## niv 2
 
 ```{r}
 #| echo: false
@@ -1083,6 +1632,1845 @@ dt_prop_niv_2_DA <- as.data.frame(table(dataset_DA$comparaison_niv1, useNA = "al
 dt_prop_niv_2_DA$prop <- dt_prop_niv_2_DA$Freq / sum(dt_prop_niv_2_DA$Freq)
 dt_prop_niv_2_DA
 ```
+
+# \*\*\* intelligence collective
+
+## variables
+
+avis_niv1 = "Déclin" \~ -1,"Augmentation" \~ 1, "Stable" \~ 0
+
+round
+
+ou
+
+mean avis \<= -0.2 \~ "Déclin", mean avis \>= 0.2 \~ "Augmentation", -0.2 \< mean avis \> 0.2 \~ "Stable"
+
+```{r}
+#| echo: false
+dataset_intel <- dataset %>% 
+  filter(avis_niv1 != "Incertain") %>% 
+  mutate(avis_niv1_intel = case_when(avis_niv1 == "Déclin" ~ -1,
+                                     avis_niv1 == "Augmentation" ~ 1,
+                                     avis_niv1 == "Stable" ~ 0))
+
+dataset_intel <- dataset_intel[!is.na(dataset_intel$avis_niv1_intel),]
+
+table(dataset_intel$avis_niv1_intel, useNA = "always")
+
+mean_intel_dt <- dataset_intel %>% 
+  group_by(espece) %>%
+  summarise(mean_avis_niv1_intel = mean(avis_niv1_intel),
+            sd_avis_niv1_intel = sd(avis_niv1_intel)) %>% 
+  # round
+  mutate(round_avis_niv1_intel = round(mean_avis_niv1_intel),
+         round_avis_niv1_intel_cat = case_when(round_avis_niv1_intel == "-1" ~ "Déclin",
+                                     round_avis_niv1_intel == "1" ~ "Augmentation",
+                                     round_avis_niv1_intel == "0" ~ "Stable")) %>%    
+  # quartile02
+  mutate(quantile02_avis_niv1_intel = round(mean_avis_niv1_intel),
+         quantile02_avis_niv1_intel_cat = case_when(mean_avis_niv1_intel <= -0.2 ~ "Déclin",
+                                          mean_avis_niv1_intel >= 0.2 ~ "Augmentation",
+                                          between(mean_avis_niv1_intel, -0.2,0.2) ~ "Stable"))
+  
+```
+
+## Chi² : shoc vs round
+
+```{r}
+#| echo: false
+obs_round <- table(mean_intel_dt$round_avis_niv1_intel_cat)
+
+tendance_shoc <- dataset %>% 
+  dplyr::select(espece, tendance_shoc_niv1) %>% 
+  distinct() 
+
+obs_shoc <- table(tendance_shoc$tendance_shoc_niv1)
+
+categories_communes <- intersect(names(obs_shoc), names(obs_round))
+
+obs_shoc_c <- obs_shoc[categories_communes]
+obs_round_c <- obs_round[categories_communes]
+
+tab_chi2_round <- rbind(
+  SHOC = obs_shoc_c,
+  AVIS = obs_round
+)
+
+tab_chi2_round
+
+chisq.test(tab_chi2_round)
+
+res_round <- chisq.test(tab_chi2_round)
+
+print("résidus")
+res_round$stdres
+
+print("proportions")
+prop.table(tab_chi2_round, margin = 1)
+```
+
+## Chi² : shoc vs quantile 0.2
+
+```{r}
+#| echo: false
+obs_quantile02 <- table(mean_intel_dt$quantile02_avis_niv1_intel_cat)
+
+tendance_shoc <- dataset %>% 
+  dplyr::select(espece, tendance_shoc_niv1) %>% 
+  distinct() 
+
+obs_shoc <- table(tendance_shoc$tendance_shoc_niv1)
+
+categories_communes <- intersect(names(obs_shoc), names(obs_quantile02))
+
+obs_shoc_c <- obs_shoc[categories_communes]
+obs_quantile02_c <- obs_quantile02[categories_communes]
+
+tab_chi2_quantile02 <- rbind(
+  SHOC = obs_shoc_c,
+  AVIS = obs_quantile02
+)
+
+tab_chi2_quantile02
+
+chisq.test(tab_chi2_quantile02)
+
+res_quantile02 <- chisq.test(tab_chi2_quantile02)
+
+print("résidus")
+res_quantile02$stdres
+
+print("proportions")
+prop.table(tab_chi2_quantile02, margin = 1)
+```
+
+## tendances par espece
+
+```{r}
+mean_intel_dt <- mean_intel_dt %>% 
+  left_join(tendance_shoc)
+
+dt_intel_quantile02 <- mean_intel_dt %>% 
+  dplyr::select(espece, round_avis_niv1_intel_cat, quantile02_avis_niv1_intel_cat, tendance_shoc_niv1) %>% 
+  rename(espece = espece, 
+         `tendance moyenne arrondie quiz` = round_avis_niv1_intel_cat, 
+         `tendance moyenne quantile (-0.2, 0.2) quiz` = quantile02_avis_niv1_intel_cat, 
+         `tendance stat SHOC` = tendance_shoc_niv1)
+
+dt_intel_quantile02 %>%
+  datatable(extensions = 'Buttons',
+            options = list(dom = 'Blfrtip',
+                           buttons = c('copy', 'csv', 'excel', 'pdf', 'print'),
+                           lengthMenu = list(c(10,25,50,-1),
+                                             c(10,25,50,"All"))))
+
+dt_intel_quantile02
+```
+
+## variabilité des réponses par espece
+
+Pas de correlation entre le tendances moyennes estimées collectivement et la variation (écart-type) dans les réponses
+
+```{r}
+plot(mean_intel_dt$mean_avis_niv1_intel, mean_intel_dt$sd_avis_niv1_intel)
+summary(lm(mean_intel_dt$mean_avis_niv1_intel ~ mean_intel_dt$sd_avis_niv1_intel))
+```
+
+```{r}
+save.image(file = "SHOC-humain.RData")
+```
+
+# !!!!!!
+
+```{r}
+#| eval: false
+#| include: false
+
+
+
+
+
+
+
+
+
+
+
+
+
+m_niv_2_1 <- clmm(avis_niv2 ~ 
+                    tendance_shoc_niv2 + 
+                    migrateur + regime + detectabilite + popularite + abondance_log +
+                    (1 | espece) + (1 | email),
+                  data = dt2, link = "logit", Hess = TRUE)
+
+m_no_pop <- update(m_full, . ~ . - popularite)
+
+anova(m_full, m_no_pop)
+
+
+
+tendance_shoc_niv2:abondance_log
+
+tendance_shoc_niv2:popularite
+
+tendance_shoc_niv2:detectabilite
+
+tendance_shoc_niv2:regime
+
+tendance_shoc_niv2:migrateur
+
+
+
+
+
+
+
+
+m_niv2.1 <- clmm(avis_niv2 ~ 
+                   tendance_shoc_niv2 + 
+                   (1 | espece) + (1 | email), data = dt2, link = "logit", Hess = TRUE, na.action = na.omit)
+
+m_niv2.esp_all <- clmm(avis_niv2 ~ 
+                         tendance_shoc_niv2 + 
+                         migrateur + 
+                         regime + 
+                         detectabilite + 
+                         popularite + 
+                         abondance_log +
+                         tendance_shoc_niv2:migrateur + 
+                         tendance_shoc_niv2:regime + 
+                         tendance_shoc_niv2:detectabilite + 
+                         tendance_shoc_niv2:popularite + 
+                         tendance_shoc_niv2:abondance_log + 
+                         (1 | espece) + (1 | email), data = dt2, link = "logit", Hess = TRUE, na.action = na.omit)
+
+m_niv2.esp_all_2 <- clm(avis_niv2 ~ 
+                         tendance_shoc_niv2 + 
+                         migrateur + 
+                         regime + 
+                         detectabilite + 
+                         popularite + 
+                         abondance_log +
+                         tendance_shoc_niv2:migrateur + 
+                         tendance_shoc_niv2:regime + 
+                         tendance_shoc_niv2:detectabilite + 
+                         tendance_shoc_niv2:popularite + 
+                         tendance_shoc_niv2:abondance_log, data = dt2, link = "logit", Hess = TRUE, na.action = na.omit)
+
+m_niv2.esp_1 <- clmm(avis_niv2 ~ 
+                         tendance_shoc_niv2 + 
+                         abondance_log +
+                         tendance_shoc_niv2:abondance_log + 
+                         (1 | espece) + (1 | email), data = dt2, link = "logit", Hess = TRUE, na.action = na.omit)
+
+m_niv2.esp_1_norandom <- clm(avis_niv2 ~ 
+                         tendance_shoc_niv2 + 
+                         abondance_log +
+                         tendance_shoc_niv2:abondance_log,
+                         data = dt2, link = "logit", Hess = TRUE, na.action = na.omit)
+
+m_niv2.esp_2 <- clmm(avis_niv2 ~ 
+                         tendance_shoc_niv2 + 
+                         popularite +
+                         tendance_shoc_niv2:popularite + 
+                         (1 | espece) + (1 | email), data = dt2, link = "logit", Hess = TRUE, na.action = na.omit)
+
+m_niv2.esp_2_norandom <- clm(avis_niv2 ~ 
+                         tendance_shoc_niv2 + 
+                         popularite +
+                         tendance_shoc_niv2:popularite
+                         , data = dt2, link = "logit", Hess = TRUE, na.action = na.omit)
+
+m_niv2.esp_3 <- clmm(avis_niv2 ~ 
+                         tendance_shoc_niv2 + 
+                         detectabilite +
+                         tendance_shoc_niv2:detectabilite + 
+                         (1 | espece) + (1 | email), data = dt2, link = "logit", Hess = TRUE, na.action = na.omit)
+
+m_niv2.esp_3_norandom <- clm(avis_niv2 ~ 
+                         tendance_shoc_niv2 + 
+                         detectabilite +
+                         tendance_shoc_niv2:detectabilite
+                         , data = dt2, link = "logit", Hess = TRUE, na.action = na.omit)
+
+m_niv2.esp_4 <- clmm(avis_niv2 ~ 
+                         tendance_shoc_niv2 + 
+                         regime +
+                         tendance_shoc_niv2:regime + 
+                         (1 | espece) + (1 | email), data = dt2, link = "logit", Hess = TRUE, na.action = na.omit)
+
+m_niv2.esp_4_norandom <- clm(avis_niv2 ~ 
+                         tendance_shoc_niv2 + 
+                         regime +
+                         tendance_shoc_niv2:regime
+                         , data = dt2, link = "logit", Hess = TRUE, na.action = na.omit)
+
+m_niv2.esp_5 <- clmm(avis_niv2 ~ 
+                         tendance_shoc_niv2 + 
+                         migrateur +
+                         tendance_shoc_niv2:migrateur + 
+                         (1 | espece) + (1 | email), data = dt2, link = "logit", Hess = TRUE, na.action = na.omit)
+
+m_niv2.esp_5_norandom <- clm(avis_niv2 ~ 
+                         tendance_shoc_niv2 + 
+                         migrateur +
+                         tendance_shoc_niv2:migrateur
+                         , data = dt2, link = "logit", Hess = TRUE, na.action = na.omit)
+
+m_niv2.esp_21 <- clmm(avis_niv2 ~ 
+                         tendance_shoc_niv2 + 
+                         popularite +
+                         migrateur + 
+                         tendance_shoc_niv2:popularite + 
+                         tendance_shoc_niv2:migrateur + 
+                         (1 | espece) + (1 | email), data = dt2, link = "logit", Hess = TRUE, na.action = na.omit)
+
+m_niv2.esp_22 <- clmm(avis_niv2 ~ 
+                         tendance_shoc_niv2 + 
+                         popularite +
+                         regime + 
+                         tendance_shoc_niv2:popularite + 
+                         tendance_shoc_niv2:regime + 
+                         (1 | espece) + (1 | email), data = dt2, link = "logit", Hess = TRUE, na.action = na.omit)
+
+m_niv2.esp_23 <- clmm(avis_niv2 ~ 
+                         tendance_shoc_niv2 + 
+                         popularite +
+                         abondance_log + 
+                         tendance_shoc_niv2:popularite + 
+                         tendance_shoc_niv2:abondance_log + 
+                         (1 | espece) + (1 | email), data = dt2, link = "logit", Hess = TRUE, na.action = na.omit)
+
+m_niv2.esp_24 <- clmm(avis_niv2 ~ 
+                         tendance_shoc_niv2 + 
+                         popularite +
+                         detectabilite + 
+                         tendance_shoc_niv2:popularite + 
+                         tendance_shoc_niv2:detectabilite + 
+                         (1 | espece) + (1 | email), data = dt2, link = "logit", Hess = TRUE, na.action = na.omit)
+
+AIC_dt <- as.data.frame(AIC(m_niv2.021, 
+    m_niv2.1, 
+    # m_niv2.esp_1, m_niv2.esp_2, m_niv2.esp_3,
+    # m_niv2.esp_all,
+    m_niv2.esp_1, m_niv2.esp_2, m_niv2.esp_3, m_niv2.esp_4, m_niv2.esp_5,
+    m_niv2.esp_21, 
+    # m_niv2.esp_22, m_niv2.esp_23, m_niv2.esp_24,
+    m_niv2.esp_1_norandom, m_niv2.esp_2_norandom, m_niv2.esp_3_norandom, m_niv2.esp_4_norandom, m_niv2.esp_5_norandom
+    ))
+
+AIC_dt <- AIC_dt %>% 
+  arrange(AIC) ; AIC_dt
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+modele_base_niv2 <- polr(
+   avis_niv2 ~ tendance_shoc_niv2,
+    data = dt2,
+  Hess = TRUE
+)
+
+modele_base_niv2 <- stepAIC(
+  modele_base_niv2,
+  direction = "both",
+  trace = FALSE
+)
+
+# p-value ----------------------------------------------------------------------
+
+ctable_base_niv2 <- coef(summary(modele_base_niv2))
+p_values_base_niv2 <- pnorm(abs(ctable_base_niv2[, "t value"]), lower.tail = FALSE) * 2
+cbind(ctable_base_niv2, "p value" = p_values_base_niv2)
+
+# plot -------------------------------------------------------------------------
+
+ctable_base_niv2 <- as.data.frame(ctable_base_niv2)
+
+res_base_niv2 <- as.data.frame(ctable_base_niv2) %>%
+  mutate(
+    variable = rownames(ctable_base_niv2),
+    p_value = p_values_base_niv2,
+    signif = case_when(
+      p_value < 0.001 ~ "***", 
+      p_value < 0.01  ~ "**",
+      p_value < 0.05  ~ "*",
+      TRUE            ~ "ns"
+    ),
+    lower = Value - 1.96 * ctable_base_niv2$`Std. Error`,
+    upper = Value + 1.96 * ctable_base_niv2$`Std. Error`
+  )
+
+res_plot_base_niv2 <- res_base_niv2 %>%
+  filter(!grepl("\\|", variable))
+
+res_plot_base_niv2$variable <- factor(
+  res_plot_base_niv2$variable,
+  levels = res_plot_base_niv2$variable[order(res_plot_base_niv2$Value)]
+)
+
+res_plot_base_niv2 <- res_plot_base_niv2 %>%
+  mutate(
+    OR = exp(Value),
+    OR_lower = exp(lower),
+    OR_upper = exp(upper)
+  )
+
+# plot 
+ggplot(res_plot_base_niv2, aes(x = OR, y = variable, fill = signif)) +
+  geom_vline(xintercept = 1, linetype = "dashed", color = "grey40") +
+  geom_errorbarh(
+    aes(xmin = OR_lower, xmax = OR_upper),
+    height = 0.2
+  ) +
+  geom_point(size = 3, shape = 21, color = "grey") +
+  scale_fill_manual(
+    values = c("***" = "#177B5D", "**" = "#66c2a5", "*" = "#7CEAC7", "ns" = "white")
+  ) +
+  scale_x_log10(
+    breaks = c(0.25, 0.5, 1, 2, 4, 8),
+    labels = c("4× moins", "2× moins", "pas d'effet", "2× plus", "4× plus", "8× plus")
+  ) +
+  labs(
+    x = "Chances d’être classé dans une catégorie d’avis plus élevée",
+    y = "",
+    color = "Significativité",
+    title = "Effets des variables explicatives sur l’avis (odds ratios)"
+  ) +
+  theme_minimal(base_size = 13) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+```
+
+### migrateur
+
+```{r}
+#| eval: false
+#| include: false
+# modele_full <- polr(
+#    avis_niv1 ~ tendance_shoc_niv1 +
+#      + regime + detectabilite + gregaire + popularite + abondance_log + #migrateur_simplifie
+#     sexe + anciennete +
+#     expert + # participation_stoc + participation_shoc + participation_epoc + cocheur + bagueur +
+#     tendances_stoc, # + tendance_shoc + tendances_stoc_simplifie,
+#   data = dt2,
+#   Hess = TRUE
+# )
+
+# model ------------------------------------------------------------------------
+
+modele_migrateur <- polr(
+   avis_niv1 ~ tendance_shoc_niv1*migrateur,
+    data = dt2,
+  Hess = TRUE
+)
+
+modele_migrateur <- stepAIC(
+  modele_migrateur,
+  direction = "both",
+  trace = FALSE
+)
+
+# p-value ----------------------------------------------------------------------
+
+ctable_migrateur <- coef(summary(modele_migrateur))
+p_values_migrateur <- pnorm(abs(ctable_migrateur[, "t value"]), lower.tail = FALSE) * 2
+cbind(ctable_migrateur, "p value" = p_values_migrateur)
+
+# plot -------------------------------------------------------------------------
+
+ctable_migrateur <- as.data.frame(ctable_migrateur)
+
+res_migrateur <- as.data.frame(ctable_migrateur) %>%
+  mutate(
+    variable = rownames(ctable_migrateur),
+    p_value = p_values_migrateur,
+    signif = case_when(
+      p_value < 0.001 ~ "***", 
+      p_value < 0.01  ~ "**",
+      p_value < 0.05  ~ "*",
+      TRUE            ~ "ns"
+    ),
+    lower = Value - 1.96 * ctable_migrateur$`Std. Error`,
+    upper = Value + 1.96 * ctable_migrateur$`Std. Error`
+  )
+
+res_plot_migrateur <- res_migrateur %>%
+  filter(!grepl("\\|", variable))
+
+res_plot_migrateur$variable <- factor(
+  res_plot_migrateur$variable,
+  levels = res_plot_migrateur$variable[order(res_plot_migrateur$Value)]
+)
+
+# OR, échelle interprétable 
+# Un odds ratio (OR) se lit comme :
+# « multiplicateur des chances d’être classé dans une catégorie d’avis plus élevée plutôt qu’une catégorie plus basse »
+
+res_plot_migrateur <- res_plot_migrateur %>%
+  mutate(
+    OR = exp(Value),
+    OR_lower = exp(lower),
+    OR_upper = exp(upper)
+  )
+
+# nom des variables :
+res_plot_migrateur$variable <- fct_recode(res_plot_migrateur$variable,
+                                "SHOC - Quadratique" = "tendance_shoc_niv1.Q",
+                                "SHOC - Linéaire" = "tendance_shoc_niv1.L")
+                                
+# plot 
+ggplot(res_plot_migrateur, aes(x = OR, y = variable, fill = signif)) +
+  geom_vline(xintercept = 1, linetype = "dashed", color = "grey40") +
+  geom_errorbarh(
+    aes(xmin = OR_lower, xmax = OR_upper),
+    height = 0.2
+  ) +
+  geom_point(size = 3, shape = 21, color = "grey") +
+  scale_fill_manual(
+    values = c("***" = "#177B5D", "**" = "#66c2a5", "*" = "#7CEAC7", "ns" = "white")
+  ) +
+  scale_x_log10(
+    breaks = c(0.25, 0.5, 1, 2, 4, 8),
+    labels = c("4× moins", "2× moins", "pas d'effet", "2× plus", "4× plus", "8× plus")
+  ) +
+  labs(
+    x = "Chances d’être classé dans une catégorie d’avis plus élevée",
+    y = "",
+    color = "Significativité",
+    title = "Effets des variables explicatives sur l’avis (odds ratios)"
+  ) +
+  theme_minimal(base_size = 13) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+```
+
+### regime
+
+```{r}
+#| eval: false
+#| include: false
+# modele_full <- polr(
+#    avis_niv1 ~ tendance_shoc_niv1 +
+#      +  + detectabilite + gregaire + popularite + abondance_log + #migrateur_simplifie
+#     sexe + anciennete +
+#     expert + # participation_stoc + participation_shoc + participation_epoc + cocheur + bagueur +
+#     tendances_stoc, # + tendance_shoc + tendances_stoc_simplifie,
+#   data = dt2,
+#   Hess = TRUE
+# )
+
+# model ------------------------------------------------------------------------
+
+modele_regime <- polr(
+   avis_niv1 ~ tendance_shoc_niv1*regime,
+    data = dt2,
+  Hess = TRUE
+)
+
+modele_regime <- stepAIC(
+  modele_regime,
+  direction = "both",
+  trace = FALSE
+)
+
+# p-value ----------------------------------------------------------------------
+
+ctable_regime <- coef(summary(modele_regime))
+p_values_regime <- pnorm(abs(ctable_regime[, "t value"]), lower.tail = FALSE) * 2
+cbind(ctable_regime, "p value" = p_values_regime)
+
+# plot -------------------------------------------------------------------------
+
+ctable_regime <- as.data.frame(ctable_regime)
+
+res_regime <- as.data.frame(ctable_regime) %>%
+  mutate(
+    variable = rownames(ctable_regime),
+    p_value = p_values_regime,
+    signif = case_when(
+      p_value < 0.001 ~ "***", 
+      p_value < 0.01  ~ "**",
+      p_value < 0.05  ~ "*",
+      TRUE            ~ "ns"
+    ),
+    lower = Value - 1.96 * ctable_regime$`Std. Error`,
+    upper = Value + 1.96 * ctable_regime$`Std. Error`
+  )
+
+res_plot_regime <- res_regime %>%
+  filter(!grepl("\\|", variable))
+
+res_plot_regime$variable <- factor(
+  res_plot_regime$variable,
+  levels = res_plot_regime$variable[order(res_plot_regime$Value)]
+)
+
+# OR, échelle interprétable 
+# Un odds ratio (OR) se lit comme :
+# « multiplicateur des chances d’être classé dans une catégorie d’avis plus élevée plutôt qu’une catégorie plus basse »
+
+res_plot_regime <- res_plot_regime %>%
+  mutate(
+    OR = exp(Value),
+    OR_lower = exp(lower),
+    OR_upper = exp(upper)
+  )
+
+# nom des variables :
+res_plot_regime$variable <- fct_recode(res_plot_regime$variable,
+                                "SHOC - Quadratique" = "tendance_shoc_niv1.Q",
+                                "SHOC - Linéaire" = "tendance_shoc_niv1.L")
+                                
+# plot 
+ggplot(res_plot_regime, aes(x = OR, y = variable, fill = signif)) +
+  geom_vline(xintercept = 1, linetype = "dashed", color = "grey40") +
+  geom_errorbarh(
+    aes(xmin = OR_lower, xmax = OR_upper),
+    height = 0.2
+  ) +
+  geom_point(size = 3, shape = 21, color = "grey") +
+  scale_fill_manual(
+    values = c("***" = "#177B5D", "**" = "#66c2a5", "*" = "#7CEAC7", "ns" = "white")
+  ) +
+  scale_x_log10(
+    breaks = c(0.25, 0.5, 1, 2, 4, 8),
+    labels = c("4× moins", "2× moins", "pas d'effet", "2× plus", "4× plus", "8× plus")
+  ) +
+  labs(
+    x = "Chances d’être classé dans une catégorie d’avis plus élevée",
+    y = "",
+    color = "Significativité",
+    title = "Effets des variables explicatives sur l’avis (odds ratios)"
+  ) +
+  theme_minimal(base_size = 13) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+```
+
+### detectabilite
+
+```{r}
+#| eval: false
+#| include: false
+# modele_full <- polr(
+#    avis_niv1 ~ tendance_shoc_niv1 +
+#      +  +  + gregaire + popularite + abondance_log + #migrateur_simplifie
+#     sexe + anciennete +
+#     expert + # participation_stoc + participation_shoc + participation_epoc + cocheur + bagueur +
+#     tendances_stoc, # + tendance_shoc + tendances_stoc_simplifie,
+#   data = dt2,
+#   Hess = TRUE
+# )
+
+# model ------------------------------------------------------------------------
+
+modele_detectabilite <- polr(
+   avis_niv1 ~ tendance_shoc_niv1*detectabilite,
+    data = dt2,
+  Hess = TRUE
+)
+
+modele_detectabilite <- stepAIC(
+  modele_detectabilite,
+  direction = "both",
+  trace = FALSE
+)
+
+# p-value ----------------------------------------------------------------------
+
+ctable_detectabilite <- coef(summary(modele_detectabilite))
+p_values_detectabilite <- pnorm(abs(ctable_detectabilite[, "t value"]), lower.tail = FALSE) * 2
+cbind(ctable_detectabilite, "p value" = p_values_detectabilite)
+
+# plot -------------------------------------------------------------------------
+
+ctable_detectabilite <- as.data.frame(ctable_detectabilite)
+
+res_detectabilite <- as.data.frame(ctable_detectabilite) %>%
+  mutate(
+    variable = rownames(ctable_detectabilite),
+    p_value = p_values_detectabilite,
+    signif = case_when(
+      p_value < 0.001 ~ "***", 
+      p_value < 0.01  ~ "**",
+      p_value < 0.05  ~ "*",
+      TRUE            ~ "ns"
+    ),
+    lower = Value - 1.96 * ctable_detectabilite$`Std. Error`,
+    upper = Value + 1.96 * ctable_detectabilite$`Std. Error`
+  )
+
+res_plot_detectabilite <- res_detectabilite %>%
+  filter(!grepl("\\|", variable))
+
+res_plot_detectabilite$variable <- factor(
+  res_plot_detectabilite$variable,
+  levels = res_plot_detectabilite$variable[order(res_plot_detectabilite$Value)]
+)
+
+# OR, échelle interprétable 
+# Un odds ratio (OR) se lit comme :
+# « multiplicateur des chances d’être classé dans une catégorie d’avis plus élevée plutôt qu’une catégorie plus basse »
+
+res_plot_detectabilite <- res_plot_detectabilite %>%
+  mutate(
+    OR = exp(Value),
+    OR_lower = exp(lower),
+    OR_upper = exp(upper)
+  )
+
+# nom des variables :
+res_plot_detectabilite$variable <- fct_recode(res_plot_detectabilite$variable,
+                                "SHOC - Quadratique" = "tendance_shoc_niv1.Q",
+                                "SHOC - Linéaire" = "tendance_shoc_niv1.L")
+                                
+# plot 
+ggplot(res_plot_detectabilite, aes(x = OR, y = variable, fill = signif)) +
+  geom_vline(xintercept = 1, linetype = "dashed", color = "grey40") +
+  geom_errorbarh(
+    aes(xmin = OR_lower, xmax = OR_upper),
+    height = 0.2
+  ) +
+  geom_point(size = 3, shape = 21, color = "grey") +
+  scale_fill_manual(
+    values = c("***" = "#177B5D", "**" = "#66c2a5", "*" = "#7CEAC7", "ns" = "white")
+  ) +
+  scale_x_log10(
+    breaks = c(0.25, 0.5, 1, 2, 4, 8),
+    labels = c("4× moins", "2× moins", "pas d'effet", "2× plus", "4× plus", "8× plus")
+  ) +
+  labs(
+    x = "Chances d’être classé dans une catégorie d’avis plus élevée",
+    y = "",
+    color = "Significativité",
+    title = "Effets des variables explicatives sur l’avis (odds ratios)"
+  ) +
+  theme_minimal(base_size = 13) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+```
+
+### gregaire
+
+```{r}
+#| eval: false
+#| include: false
+# modele_full <- polr(
+#    avis_niv1 ~ tendance_shoc_niv1 +
+#      +  +  +  + popularite + abondance_log + 
+#     sexe + anciennete +
+#     expert + 
+#     tendances_stoc, 
+#   data = dt2,
+#   Hess = TRUE
+# )
+
+# model ------------------------------------------------------------------------
+
+modele_gregaire <- polr(
+   avis_niv1 ~ tendance_shoc_niv1*gregaire,
+    data = dt2,
+  Hess = TRUE
+)
+
+modele_gregaire <- stepAIC(
+  modele_gregaire,
+  direction = "both",
+  trace = FALSE
+)
+
+# p-value ----------------------------------------------------------------------
+
+ctable_gregaire <- coef(summary(modele_gregaire))
+p_values_gregaire <- pnorm(abs(ctable_gregaire[, "t value"]), lower.tail = FALSE) * 2
+cbind(ctable_gregaire, "p value" = p_values_gregaire)
+
+# plot -------------------------------------------------------------------------
+
+ctable_gregaire <- as.data.frame(ctable_gregaire)
+
+res_gregaire <- as.data.frame(ctable_gregaire) %>%
+  mutate(
+    variable = rownames(ctable_gregaire),
+    p_value = p_values_gregaire,
+    signif = case_when(
+      p_value < 0.001 ~ "***", 
+      p_value < 0.01  ~ "**",
+      p_value < 0.05  ~ "*",
+      TRUE            ~ "ns"
+    ),
+    lower = Value - 1.96 * ctable_gregaire$`Std. Error`,
+    upper = Value + 1.96 * ctable_gregaire$`Std. Error`
+  )
+
+res_plot_gregaire <- res_gregaire %>%
+  filter(!grepl("\\|", variable))
+
+res_plot_gregaire$variable <- factor(
+  res_plot_gregaire$variable,
+  levels = res_plot_gregaire$variable[order(res_plot_gregaire$Value)]
+)
+
+# OR, échelle interprétable 
+# Un odds ratio (OR) se lit comme :
+# « multiplicateur des chances d’être classé dans une catégorie d’avis plus élevée plutôt qu’une catégorie plus basse »
+
+res_plot_gregaire <- res_plot_gregaire %>%
+  mutate(
+    OR = exp(Value),
+    OR_lower = exp(lower),
+    OR_upper = exp(upper)
+  )
+
+# nom des variables :
+res_plot_gregaire$variable <- fct_recode(res_plot_gregaire$variable,
+                                "SHOC - Quadratique" = "tendance_shoc_niv1.Q",
+                                "SHOC - Linéaire" = "tendance_shoc_niv1.L")
+                                
+# plot 
+ggplot(res_plot_gregaire, aes(x = OR, y = variable, fill = signif)) +
+  geom_vline(xintercept = 1, linetype = "dashed", color = "grey40") +
+  geom_errorbarh(
+    aes(xmin = OR_lower, xmax = OR_upper),
+    height = 0.2
+  ) +
+  geom_point(size = 3, shape = 21, color = "grey") +
+  scale_fill_manual(
+    values = c("***" = "#177B5D", "**" = "#66c2a5", "*" = "#7CEAC7", "ns" = "white")
+  ) +
+  scale_x_log10(
+    breaks = c(0.25, 0.5, 1, 2, 4, 8),
+    labels = c("4× moins", "2× moins", "pas d'effet", "2× plus", "4× plus", "8× plus")
+  ) +
+  labs(
+    x = "Chances d’être classé dans une catégorie d’avis plus élevée",
+    y = "",
+    color = "Significativité",
+    title = "Effets des variables explicatives sur l’avis (odds ratios)"
+  ) +
+  theme_minimal(base_size = 13) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+```
+
+### popularite
+
+```{r}
+#| eval: false
+#| include: false
+# modele_full <- polr(
+#    avis_niv1 ~ tendance_shoc_niv1 +
+#      +  +  +  +  + abondance_log + 
+#     sexe + anciennete +
+#     expert + 
+#     tendances_stoc, 
+#   data = dt2,
+#   Hess = TRUE
+# )
+
+# model ------------------------------------------------------------------------
+
+modele_popularite <- polr(
+   avis_niv1 ~ tendance_shoc_niv1*popularite,
+    data = dt2,
+  Hess = TRUE
+)
+
+modele_popularite <- stepAIC(
+  modele_popularite,
+  direction = "both",
+  trace = FALSE
+)
+
+# p-value ----------------------------------------------------------------------
+
+ctable_popularite <- coef(summary(modele_popularite))
+p_values_popularite <- pnorm(abs(ctable_popularite[, "t value"]), lower.tail = FALSE) * 2
+cbind(ctable_popularite, "p value" = p_values_popularite)
+
+# plot -------------------------------------------------------------------------
+
+ctable_popularite <- as.data.frame(ctable_popularite)
+
+res_popularite <- as.data.frame(ctable_popularite) %>%
+  mutate(
+    variable = rownames(ctable_popularite),
+    p_value = p_values_popularite,
+    signif = case_when(
+      p_value < 0.001 ~ "***", 
+      p_value < 0.01  ~ "**",
+      p_value < 0.05  ~ "*",
+      TRUE            ~ "ns"
+    ),
+    lower = Value - 1.96 * ctable_popularite$`Std. Error`,
+    upper = Value + 1.96 * ctable_popularite$`Std. Error`
+  )
+
+res_plot_popularite <- res_popularite %>%
+  filter(!grepl("\\|", variable))
+
+res_plot_popularite$variable <- factor(
+  res_plot_popularite$variable,
+  levels = res_plot_popularite$variable[order(res_plot_popularite$Value)]
+)
+
+# OR, échelle interprétable 
+# Un odds ratio (OR) se lit comme :
+# « multiplicateur des chances d’être classé dans une catégorie d’avis plus élevée plutôt qu’une catégorie plus basse »
+
+res_plot_popularite <- res_plot_popularite %>%
+  mutate(
+    OR = exp(Value),
+    OR_lower = exp(lower),
+    OR_upper = exp(upper)
+  )
+
+# nom des variables :
+res_plot_popularite$variable <- fct_recode(res_plot_popularite$variable,
+                                "SHOC - Quadratique" = "tendance_shoc_niv1.Q",
+                                "SHOC - Linéaire" = "tendance_shoc_niv1.L")
+                                
+# plot 
+ggplot(res_plot_popularite, aes(x = OR, y = variable, fill = signif)) +
+  geom_vline(xintercept = 1, linetype = "dashed", color = "grey40") +
+  geom_errorbarh(
+    aes(xmin = OR_lower, xmax = OR_upper),
+    height = 0.2
+  ) +
+  geom_point(size = 3, shape = 21, color = "grey") +
+  scale_fill_manual(
+    values = c("***" = "#177B5D", "**" = "#66c2a5", "*" = "#7CEAC7", "ns" = "white")
+  ) +
+  scale_x_log10(
+    breaks = c(0.25, 0.5, 1, 2, 4, 8),
+    labels = c("4× moins", "2× moins", "pas d'effet", "2× plus", "4× plus", "8× plus")
+  ) +
+  labs(
+    x = "Chances d’être classé dans une catégorie d’avis plus élevée",
+    y = "",
+    color = "Significativité",
+    title = "Effets des variables explicatives sur l’avis (odds ratios)"
+  ) +
+  theme_minimal(base_size = 13) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+```
+
+### abondance_log
+
+```{r}
+#| eval: false
+#| include: false
+# modele_full <- polr(
+#    avis_niv1 ~ tendance_shoc_niv1 +
+#      +  +  +  +  +  + 
+#     sexe + anciennete +
+#     expert + 
+#     tendances_stoc, 
+#   data = dt2,
+#   Hess = TRUE
+# )
+
+# model ------------------------------------------------------------------------
+
+modele_abondance_log <- polr(
+   avis_niv1 ~ tendance_shoc_niv1*abondance_log,
+    data = dt2,
+  Hess = TRUE
+)
+
+modele_abondance_log <- stepAIC(
+  modele_abondance_log,
+  direction = "both",
+  trace = FALSE
+)
+
+# p-value ----------------------------------------------------------------------
+
+ctable_abondance_log <- coef(summary(modele_abondance_log))
+p_values_abondance_log <- pnorm(abs(ctable_abondance_log[, "t value"]), lower.tail = FALSE) * 2
+cbind(ctable_abondance_log, "p value" = p_values_abondance_log)
+
+# plot -------------------------------------------------------------------------
+
+ctable_abondance_log <- as.data.frame(ctable_abondance_log)
+
+res_abondance_log <- as.data.frame(ctable_abondance_log) %>%
+  mutate(
+    variable = rownames(ctable_abondance_log),
+    p_value = p_values_abondance_log,
+    signif = case_when(
+      p_value < 0.001 ~ "***", 
+      p_value < 0.01  ~ "**",
+      p_value < 0.05  ~ "*",
+      TRUE            ~ "ns"
+    ),
+    lower = Value - 1.96 * ctable_abondance_log$`Std. Error`,
+    upper = Value + 1.96 * ctable_abondance_log$`Std. Error`
+  )
+
+res_plot_abondance_log <- res_abondance_log %>%
+  filter(!grepl("\\|", variable))
+
+res_plot_abondance_log$variable <- factor(
+  res_plot_abondance_log$variable,
+  levels = res_plot_abondance_log$variable[order(res_plot_abondance_log$Value)]
+)
+
+# OR, échelle interprétable 
+# Un odds ratio (OR) se lit comme :
+# « multiplicateur des chances d’être classé dans une catégorie d’avis plus élevée plutôt qu’une catégorie plus basse »
+
+res_plot_abondance_log <- res_plot_abondance_log %>%
+  mutate(
+    OR = exp(Value),
+    OR_lower = exp(lower),
+    OR_upper = exp(upper)
+  )
+
+# nom des variables :
+res_plot_abondance_log$variable <- fct_recode(res_plot_abondance_log$variable,
+                                "SHOC - Quadratique" = "tendance_shoc_niv1.Q",
+                                "SHOC - Linéaire" = "tendance_shoc_niv1.L")
+                                
+# plot 
+ggplot(res_plot_abondance_log, aes(x = OR, y = variable, fill = signif)) +
+  geom_vline(xintercept = 1, linetype = "dashed", color = "grey40") +
+  geom_errorbarh(
+    aes(xmin = OR_lower, xmax = OR_upper),
+    height = 0.2
+  ) +
+  geom_point(size = 3, shape = 21, color = "grey") +
+  scale_fill_manual(
+    values = c("***" = "#177B5D", "**" = "#66c2a5", "*" = "#7CEAC7", "ns" = "white")
+  ) +
+  scale_x_log10(
+    breaks = c(0.25, 0.5, 1, 2, 4, 8),
+    labels = c("4× moins", "2× moins", "pas d'effet", "2× plus", "4× plus", "8× plus")
+  ) +
+  labs(
+    x = "Chances d’être classé dans une catégorie d’avis plus élevée",
+    y = "",
+    color = "Significativité",
+    title = "Effets des variables explicatives sur l’avis (odds ratios)"
+  ) +
+  theme_minimal(base_size = 13) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+```
+
+### sexe
+
+```{r}
+#| eval: false
+#| include: false
+# modele_full <- polr(
+#    avis_niv1 ~ tendance_shoc_niv1 +
+#      +  +  +  +  +  + 
+#      + anciennete +
+#     expert + 
+#     tendances_stoc, 
+#   data = dt2,
+#   Hess = TRUE
+# )
+
+# model ------------------------------------------------------------------------
+
+modele_sexe <- polr(
+   avis_niv1 ~ tendance_shoc_niv1*sexe,
+    data = dt2,
+  Hess = TRUE
+)
+
+modele_sexe <- stepAIC(
+  modele_sexe,
+  direction = "both",
+  trace = FALSE
+)
+
+# p-value ----------------------------------------------------------------------
+
+ctable_sexe <- coef(summary(modele_sexe))
+p_values_sexe <- pnorm(abs(ctable_sexe[, "t value"]), lower.tail = FALSE) * 2
+cbind(ctable_sexe, "p value" = p_values_sexe)
+
+# plot -------------------------------------------------------------------------
+
+ctable_sexe <- as.data.frame(ctable_sexe)
+
+res_sexe <- as.data.frame(ctable_sexe) %>%
+  mutate(
+    variable = rownames(ctable_sexe),
+    p_value = p_values_sexe,
+    signif = case_when(
+      p_value < 0.001 ~ "***", 
+      p_value < 0.01  ~ "**",
+      p_value < 0.05  ~ "*",
+      TRUE            ~ "ns"
+    ),
+    lower = Value - 1.96 * ctable_sexe$`Std. Error`,
+    upper = Value + 1.96 * ctable_sexe$`Std. Error`
+  )
+
+res_plot_sexe <- res_sexe %>%
+  filter(!grepl("\\|", variable))
+
+res_plot_sexe$variable <- factor(
+  res_plot_sexe$variable,
+  levels = res_plot_sexe$variable[order(res_plot_sexe$Value)]
+)
+
+# OR, échelle interprétable 
+# Un odds ratio (OR) se lit comme :
+# « multiplicateur des chances d’être classé dans une catégorie d’avis plus élevée plutôt qu’une catégorie plus basse »
+
+res_plot_sexe <- res_plot_sexe %>%
+  mutate(
+    OR = exp(Value),
+    OR_lower = exp(lower),
+    OR_upper = exp(upper)
+  )
+
+# nom des variables :
+res_plot_sexe$variable <- fct_recode(res_plot_sexe$variable,
+                                "SHOC - Quadratique" = "tendance_shoc_niv1.Q",
+                                "SHOC - Linéaire" = "tendance_shoc_niv1.L")
+                                
+# plot 
+ggplot(res_plot_sexe, aes(x = OR, y = variable, fill = signif)) +
+  geom_vline(xintercept = 1, linetype = "dashed", color = "grey40") +
+  geom_errorbarh(
+    aes(xmin = OR_lower, xmax = OR_upper),
+    height = 0.2
+  ) +
+  geom_point(size = 3, shape = 21, color = "grey") +
+  scale_fill_manual(
+    values = c("***" = "#177B5D", "**" = "#66c2a5", "*" = "#7CEAC7", "ns" = "white")
+  ) +
+  scale_x_log10(
+    breaks = c(0.25, 0.5, 1, 2, 4, 8),
+    labels = c("4× moins", "2× moins", "pas d'effet", "2× plus", "4× plus", "8× plus")
+  ) +
+  labs(
+    x = "Chances d’être classé dans une catégorie d’avis plus élevée",
+    y = "",
+    color = "Significativité",
+    title = "Effets des variables explicatives sur l’avis (odds ratios)"
+  ) +
+  theme_minimal(base_size = 13) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+```
+
+### anciennete
+
+```{r}
+#| eval: false
+#| include: false
+# modele_full <- polr(
+#    avis_niv1 ~ tendance_shoc_niv1 +
+#      +  +  +  +  +  + 
+#      +  +
+#     expert + 
+#     tendances_stoc, 
+#   data = dt2,
+#   Hess = TRUE
+# )
+
+# model ------------------------------------------------------------------------
+
+modele_anciennete <- polr(
+   avis_niv1 ~ tendance_shoc_niv1*anciennete,
+    data = dt2,
+  Hess = TRUE
+)
+
+modele_anciennete <- stepAIC(
+  modele_anciennete,
+  direction = "both",
+  trace = FALSE
+)
+
+# p-value ----------------------------------------------------------------------
+
+ctable_anciennete <- coef(summary(modele_anciennete))
+p_values_anciennete <- pnorm(abs(ctable_anciennete[, "t value"]), lower.tail = FALSE) * 2
+cbind(ctable_anciennete, "p value" = p_values_anciennete)
+
+# plot -------------------------------------------------------------------------
+
+ctable_anciennete <- as.data.frame(ctable_anciennete)
+
+res_anciennete <- as.data.frame(ctable_anciennete) %>%
+  mutate(
+    variable = rownames(ctable_anciennete),
+    p_value = p_values_anciennete,
+    signif = case_when(
+      p_value < 0.001 ~ "***", 
+      p_value < 0.01  ~ "**",
+      p_value < 0.05  ~ "*",
+      TRUE            ~ "ns"
+    ),
+    lower = Value - 1.96 * ctable_anciennete$`Std. Error`,
+    upper = Value + 1.96 * ctable_anciennete$`Std. Error`
+  )
+
+res_plot_anciennete <- res_anciennete %>%
+  filter(!grepl("\\|", variable))
+
+res_plot_anciennete$variable <- factor(
+  res_plot_anciennete$variable,
+  levels = res_plot_anciennete$variable[order(res_plot_anciennete$Value)]
+)
+
+# OR, échelle interprétable 
+# Un odds ratio (OR) se lit comme :
+# « multiplicateur des chances d’être classé dans une catégorie d’avis plus élevée plutôt qu’une catégorie plus basse »
+
+res_plot_anciennete <- res_plot_anciennete %>%
+  mutate(
+    OR = exp(Value),
+    OR_lower = exp(lower),
+    OR_upper = exp(upper)
+  )
+
+# nom des variables :
+res_plot_anciennete$variable <- fct_recode(res_plot_anciennete$variable,
+                                "SHOC - Quadratique" = "tendance_shoc_niv1.Q",
+                                "SHOC - Linéaire" = "tendance_shoc_niv1.L")
+                                
+# plot 
+ggplot(res_plot_anciennete, aes(x = OR, y = variable, fill = signif)) +
+  geom_vline(xintercept = 1, linetype = "dashed", color = "grey40") +
+  geom_errorbarh(
+    aes(xmin = OR_lower, xmax = OR_upper),
+    height = 0.2
+  ) +
+  geom_point(size = 3, shape = 21, color = "grey") +
+  scale_fill_manual(
+    values = c("***" = "#177B5D", "**" = "#66c2a5", "*" = "#7CEAC7", "ns" = "white")
+  ) +
+  scale_x_log10(
+    breaks = c(0.25, 0.5, 1, 2, 4, 8),
+    labels = c("4× moins", "2× moins", "pas d'effet", "2× plus", "4× plus", "8× plus")
+  ) +
+  labs(
+    x = "Chances d’être classé dans une catégorie d’avis plus élevée",
+    y = "",
+    color = "Significativité",
+    title = "Effets des variables explicatives sur l’avis (odds ratios)"
+  ) +
+  theme_minimal(base_size = 13) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+```
+
+### expert
+
+```{r}
+#| eval: false
+#| include: false
+
+# modele_full <- polr(
+#    avis_niv1 ~ tendance_shoc_niv1 +
+#      +  +  +  +  +  + 
+#      +  +
+#      + 
+#     tendances_stoc, 
+#   data = dt2,
+#   Hess = TRUE
+# )
+
+# model ------------------------------------------------------------------------
+
+modele_expert <- polr(
+   avis_niv1 ~ tendance_shoc_niv1*expert,
+    data = dt2,
+  Hess = TRUE
+)
+
+modele_expert <- stepAIC(
+  modele_expert,
+  direction = "both",
+  trace = FALSE
+)
+
+# p-value ----------------------------------------------------------------------
+
+ctable_expert <- coef(summary(modele_expert))
+p_values_expert <- pnorm(abs(ctable_expert[, "t value"]), lower.tail = FALSE) * 2
+cbind(ctable_expert, "p value" = p_values_expert)
+
+# plot -------------------------------------------------------------------------
+
+ctable_expert <- as.data.frame(ctable_expert)
+
+res_expert <- as.data.frame(ctable_expert) %>%
+  mutate(
+    variable = rownames(ctable_expert),
+    p_value = p_values_expert,
+    signif = case_when(
+      p_value < 0.001 ~ "***", 
+      p_value < 0.01  ~ "**",
+      p_value < 0.05  ~ "*",
+      TRUE            ~ "ns"
+    ),
+    lower = Value - 1.96 * ctable_expert$`Std. Error`,
+    upper = Value + 1.96 * ctable_expert$`Std. Error`
+  )
+
+res_plot_expert <- res_expert %>%
+  filter(!grepl("\\|", variable))
+
+res_plot_expert$variable <- factor(
+  res_plot_expert$variable,
+  levels = res_plot_expert$variable[order(res_plot_expert$Value)]
+)
+
+# OR, échelle interprétable 
+# Un odds ratio (OR) se lit comme :
+# « multiplicateur des chances d’être classé dans une catégorie d’avis plus élevée plutôt qu’une catégorie plus basse »
+
+res_plot_expert <- res_plot_expert %>%
+  mutate(
+    OR = exp(Value),
+    OR_lower = exp(lower),
+    OR_upper = exp(upper)
+  )
+
+# nom des variables :
+res_plot_expert$variable <- fct_recode(res_plot_expert$variable,
+                                "SHOC - Quadratique" = "tendance_shoc_niv1.Q",
+                                "SHOC - Linéaire" = "tendance_shoc_niv1.L")
+                                
+# plot 
+ggplot(res_plot_expert, aes(x = OR, y = variable, fill = signif)) +
+  geom_vline(xintercept = 1, linetype = "dashed", color = "grey40") +
+  geom_errorbarh(
+    aes(xmin = OR_lower, xmax = OR_upper),
+    height = 0.2
+  ) +
+  geom_point(size = 3, shape = 21, color = "grey") +
+  scale_fill_manual(
+    values = c("***" = "#177B5D", "**" = "#66c2a5", "*" = "#7CEAC7", "ns" = "white")
+  ) +
+  scale_x_log10(
+    breaks = c(0.25, 0.5, 1, 2, 4, 8),
+    labels = c("4× moins", "2× moins", "pas d'effet", "2× plus", "4× plus", "8× plus")
+  ) +
+  labs(
+    x = "Chances d’être classé dans une catégorie d’avis plus élevée",
+    y = "",
+    color = "Significativité",
+    title = "Effets des variables explicatives sur l’avis (odds ratios)"
+  ) +
+  theme_minimal(base_size = 13) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+```
+
+### tendances_stoc
+
+```{r}
+#| eval: false
+#| include: false
+# modele_full <- polr(
+#    avis_niv1 ~ tendance_shoc_niv1 +
+#      +  +  +  +  +  + 
+#      +  +
+#      + 
+#     , 
+#   data = dt2,
+#   Hess = TRUE
+# )
+
+# model ------------------------------------------------------------------------
+
+modele_tendances_stoc <- polr(
+   avis_niv1 ~ tendance_shoc_niv1*tendances_stoc,
+    data = dt2,
+  Hess = TRUE
+)
+
+modele_tendances_stoc <- stepAIC(
+  modele_tendances_stoc,
+  direction = "both",
+  trace = FALSE
+)
+
+# p-value ----------------------------------------------------------------------
+
+ctable_tendances_stoc <- coef(summary(modele_tendances_stoc))
+p_values_tendances_stoc <- pnorm(abs(ctable_tendances_stoc[, "t value"]), lower.tail = FALSE) * 2
+cbind(ctable_tendances_stoc, "p value" = p_values_tendances_stoc)
+
+# plot -------------------------------------------------------------------------
+
+ctable_tendances_stoc <- as.data.frame(ctable_tendances_stoc)
+
+res_tendances_stoc <- as.data.frame(ctable_tendances_stoc) %>%
+  mutate(
+    variable = rownames(ctable_tendances_stoc),
+    p_value = p_values_tendances_stoc,
+    signif = case_when(
+      p_value < 0.001 ~ "***", 
+      p_value < 0.01  ~ "**",
+      p_value < 0.05  ~ "*",
+      TRUE            ~ "ns"
+    ),
+    lower = Value - 1.96 * ctable_tendances_stoc$`Std. Error`,
+    upper = Value + 1.96 * ctable_tendances_stoc$`Std. Error`
+  )
+
+res_plot_tendances_stoc <- res_tendances_stoc %>%
+  filter(!grepl("\\|", variable))
+
+res_plot_tendances_stoc$variable <- factor(
+  res_plot_tendances_stoc$variable,
+  levels = res_plot_tendances_stoc$variable[order(res_plot_tendances_stoc$Value)]
+)
+
+# OR, échelle interprétable 
+# Un odds ratio (OR) se lit comme :
+# « multiplicateur des chances d’être classé dans une catégorie d’avis plus élevée plutôt qu’une catégorie plus basse »
+
+res_plot_tendances_stoc <- res_plot_tendances_stoc %>%
+  mutate(
+    OR = exp(Value),
+    OR_lower = exp(lower),
+    OR_upper = exp(upper)
+  )
+
+# nom des variables :
+res_plot_tendances_stoc$variable <- fct_recode(res_plot_tendances_stoc$variable,
+                                "SHOC - Quadratique" = "tendance_shoc_niv1.Q",
+                                "SHOC - Linéaire" = "tendance_shoc_niv1.L")
+                                
+# plot 
+ggplot(res_plot_tendances_stoc, aes(x = OR, y = variable, fill = signif)) +
+  geom_vline(xintercept = 1, linetype = "dashed", color = "grey40") +
+  geom_errorbarh(
+    aes(xmin = OR_lower, xmax = OR_upper),
+    height = 0.2
+  ) +
+  geom_point(size = 3, shape = 21, color = "grey") +
+  scale_fill_manual(
+    values = c("***" = "#177B5D", "**" = "#66c2a5", "*" = "#7CEAC7", "ns" = "white")
+  ) +
+  scale_x_log10(
+    breaks = c(0.25, 0.5, 1, 2, 4, 8),
+    labels = c("4× moins", "2× moins", "pas d'effet", "2× plus", "4× plus", "8× plus")
+  ) +
+  labs(
+    x = "Chances d’être classé dans une catégorie d’avis plus élevée",
+    y = "",
+    color = "Significativité",
+    title = "Effets des variables explicatives sur l’avis (odds ratios)"
+  ) +
+  theme_minimal(base_size = 13) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+```
+
+### all_espece
+
+```{r}
+#| eval: false
+#| include: false
+# modele_full <- polr(
+#    avis_niv1 ~ tendance_shoc_niv1 +
+#      + regime + detectabilite + gregaire + popularite + abondance_log + #migrateur_simplifie
+#     sexe + anciennete +
+#     expert + # participation_stoc + participation_shoc + participation_epoc + cocheur + bagueur +
+#     tendances_stoc, # + tendance_shoc + tendances_stoc_simplifie,
+#   data = dt2,
+#   Hess = TRUE
+# )
+
+# model ------------------------------------------------------------------------
+
+modele_all_espece <- polr(
+   avis_niv1 ~ tendance_shoc_niv1 + 
+     # migrateur + regime +
+     detectabilite + gregaire + popularite + abondance_log +  
+     # tendance_shoc_niv1:migrateur +
+     # tendance_shoc_niv1:regime +
+     tendance_shoc_niv1:detectabilite +
+     tendance_shoc_niv1:gregaire +
+     tendance_shoc_niv1:popularite +
+     tendance_shoc_niv1:abondance_log, # +
+     # tendance_shoc_niv1:tendances_stoc,
+    data = dt2,
+  Hess = TRUE
+)
+
+modele_all_espece <- stepAIC(
+  modele_all_espece,
+  direction = "both",
+  trace = FALSE
+)
+
+# p-value ----------------------------------------------------------------------
+
+ctable_all_espece <- coef(summary(modele_all_espece))
+p_values_all_espece <- pnorm(abs(ctable_all_espece[, "t value"]), lower.tail = FALSE) * 2
+cbind(ctable_all_espece, "p value" = p_values_all_espece)
+
+# plot -------------------------------------------------------------------------
+
+ctable_all_espece <- as.data.frame(ctable_all_espece)
+
+res_all_espece <- as.data.frame(ctable_all_espece) %>%
+  mutate(
+    variable = rownames(ctable_all_espece),
+    p_value = p_values_all_espece,
+    signif = case_when(
+      p_value < 0.001 ~ "***", 
+      p_value < 0.01  ~ "**",
+      p_value < 0.05  ~ "*",
+      TRUE            ~ "ns"
+    ),
+    lower = Value - 1.96 * ctable_all_espece$`Std. Error`,
+    upper = Value + 1.96 * ctable_all_espece$`Std. Error`
+  )
+
+res_plot_all_espece <- res_all_espece %>%
+  filter(!grepl("\\|", variable))
+
+res_plot_all_espece$variable <- factor(
+  res_plot_all_espece$variable,
+  levels = res_plot_all_espece$variable[order(res_plot_all_espece$Value)]
+)
+
+# OR, échelle interprétable 
+# Un odds ratio (OR) se lit comme :
+# « multiplicateur des chances d’être classé dans une catégorie d’avis plus élevée plutôt qu’une catégorie plus basse »
+
+res_plot_all_espece <- res_plot_all_espece %>%
+  mutate(
+    OR = exp(Value),
+    OR_lower = exp(lower),
+    OR_upper = exp(upper)
+  )
+
+# nom des variables :
+unique(res_plot_all_espece$variable)
+res_plot_all_espece$variable <- fct_recode(res_plot_all_espece$variable,
+                                "Detectabilite (Forte)" = "detectabiliteForte",
+                                "Gregaire (Oui)" = "gregaireOui",
+                                "Popularite (Oui)" = "populariteOui",
+                                "Abondance" = "abondance_log",
+                                "SHOC - Linéaire : Detectabilite (Forte)" = "tendance_shoc_niv1.L:detectabiliteForte",
+                                "SHOC - Linéaire" = "tendance_shoc_niv1.L",
+                                "SHOC - Linéaire : Detectabilite (Forte)" = "tendance_shoc_niv1.L:detectabiliteForte",
+                                "SHOC - Linéaire : Gregaire (Oui)" = "tendance_shoc_niv1.L:gregaireOui",
+                                "SHOC - Linéaire : Abondance" = "tendance_shoc_niv1.L:abondance_log",
+                                "SHOC - Linéaire : Popularité (Oui)" = "tendance_shoc_niv1.L:populariteOui",
+                                "SHOC - Quadratique" = "tendance_shoc_niv1.Q",
+                                "SHOC - Quadratique : Detectabilite (Forte)" = "tendance_shoc_niv1.Q:detectabiliteForte",
+                                "SHOC - Quadratique : Gregaire (Oui)" = "tendance_shoc_niv1.Q:gregaireOui",
+                                "SHOC - Quadratique : Abondance" = "tendance_shoc_niv1.Q:abondance_log",
+                                "SHOC - Quadratique : Popularité (Oui)" = "tendance_shoc_niv1.Q:populariteOui")
+
+# plot 
+ggplot(res_plot_all_espece, aes(x = OR, y = variable, fill = signif)) +
+  geom_vline(xintercept = 1, linetype = "dashed", color = "grey40") +
+  geom_errorbarh(
+    aes(xmin = OR_lower, xmax = OR_upper),
+    height = 0.2
+  ) +
+  geom_point(size = 3, shape = 21, color = "grey") +
+  scale_fill_manual(
+    values = c("***" = "#177B5D", "**" = "#66c2a5", "*" = "#7CEAC7", "ns" = "white")
+  ) +
+  scale_x_log10(
+    breaks = c(0.015625, 0.03125, 0.0625, 0.125, 0.25, 0.5, 1, 2, 4, 8),
+    labels = c("64X mois", "32X mois", "16X mois", "8X mois", "4× moins", "2× moins", "pas d'effet", "2× plus", "4× plus", "8× plus")
+  ) +
+  labs(
+    x = "Chances d’être classé dans une catégorie d’avis plus élevée",
+    y = "",
+    color = "Significativité",
+    title = ""
+  ) +
+  theme_minimal(base_size = 13) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+```
+
+### all_participant
+
+```{r}
+#| eval: false
+#| include: false
+# modele_full <- polr(
+#    avis_niv1 ~ tendance_shoc_niv1 +
+#      + regime + detectabilite + gregaire + popularite + abondance_log + #migrateur_simplifie
+#     sexe + anciennete +
+#     expert + # participation_stoc + participation_shoc + participation_epoc + cocheur + bagueur +
+#     tendances_stoc, # + tendance_shoc + tendances_stoc_simplifie,
+#   data = dt2,
+#   Hess = TRUE
+# )
+
+# model ------------------------------------------------------------------------
+
+modele_all_participant <- polr(
+   avis_niv1 ~ tendance_shoc_niv1 + 
+     sexe + anciennete + expert + 
+     tendance_shoc_niv1:sexe +
+     tendance_shoc_niv1:anciennete +
+     tendance_shoc_niv1:expert, 
+    data = dt2,
+  Hess = TRUE
+)
+
+modele_all_participant <- stepAIC(
+  modele_all_participant,
+  direction = "both",
+  trace = FALSE
+)
+
+# p-value ----------------------------------------------------------------------
+
+ctable_all_participant <- coef(summary(modele_all_participant))
+p_values_all_participant <- pnorm(abs(ctable_all_participant[, "t value"]), lower.tail = FALSE) * 2
+cbind(ctable_all_participant, "p value" = p_values_all_participant)
+
+# plot -------------------------------------------------------------------------
+
+ctable_all_participant <- as.data.frame(ctable_all_participant)
+
+res_all_participant <- as.data.frame(ctable_all_participant) %>%
+  mutate(
+    variable = rownames(ctable_all_participant),
+    p_value = p_values_all_participant,
+    signif = case_when(
+      p_value < 0.001 ~ "***", 
+      p_value < 0.01  ~ "**",
+      p_value < 0.05  ~ "*",
+      TRUE            ~ "ns"
+    ),
+    lower = Value - 1.96 * ctable_all_participant$`Std. Error`,
+    upper = Value + 1.96 * ctable_all_participant$`Std. Error`
+  )
+
+res_plot_all_participant <- res_all_participant %>%
+  filter(!grepl("\\|", variable))
+
+res_plot_all_participant$variable <- factor(
+  res_plot_all_participant$variable,
+  levels = res_plot_all_participant$variable[order(res_plot_all_participant$Value)]
+)
+
+# OR, échelle interprétable 
+# Un odds ratio (OR) se lit comme :
+# « multiplicateur des chances d’être classé dans une catégorie d’avis plus élevée plutôt qu’une catégorie plus basse »
+
+res_plot_all_participant <- res_plot_all_participant %>%
+  mutate(
+    OR = exp(Value),
+    OR_lower = exp(lower),
+    OR_upper = exp(upper)
+  )
+
+# nom des variables :
+unique(res_plot_all_participant$variable)
+res_plot_all_participant$variable <- fct_recode(res_plot_all_participant$variable,
+                                "Sexe (H)" = "sexeH",
+                                "Anciennete" = "anciennete",
+                                "Expert (Oui)" = "expert",
+                                "STOC (Déclin modéré)" = "tendances_stocDéclin modéré",
+                                "SHOC - Linéaire" = "tendance_shoc_niv1.L",
+                                "SHOC - Linéaire : Sexe (H)" = "tendance_shoc_niv1.L:sexeH",
+                                "SHOC - Linéaire : Ancienneté" = "tendance_shoc_niv1.L:anciennete",
+                                "SHOC - Quadratique" = "tendance_shoc_niv1.Q",
+                                "SHOC - Quadratique : Sexe (H)" = "tendance_shoc_niv1.Q:sexeH",
+                                "SHOC - Quadratique : Ancienneté" = "tendance_shoc_niv1.Q:anciennete")
+
+# plot 
+ggplot(res_plot_all_participant, aes(x = OR, y = variable, fill = signif)) +
+  geom_vline(xintercept = 1, linetype = "dashed", color = "grey40") +
+  geom_errorbarh(
+    aes(xmin = OR_lower, xmax = OR_upper),
+    height = 0.2
+  ) +
+  geom_point(size = 3, shape = 21, color = "grey") +
+  scale_fill_manual(
+    values = c("***" = "#177B5D", "**" = "#66c2a5", "*" = "#7CEAC7", "ns" = "white")
+  ) +
+  scale_x_log10(
+    breaks = c(0.015625, 0.03125, 0.0625, 0.125, 0.25, 0.5, 1, 2, 4, 8),
+    labels = c("64X mois", "32X mois", "16X mois", "8X mois", "4× moins", "2× moins", "pas d'effet", "2× plus", "4× plus", "8× plus")
+  ) +
+  labs(
+    x = "Chances d’être classé dans une catégorie d’avis plus élevée",
+    y = "",
+    color = "Significativité",
+    title = ""
+  ) +
+  theme_minimal(base_size = 13) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+```
+
+### all_1
+
+```{r}
+#| eval: false
+#| include: false
+# modele_full <- polr(
+#    avis_niv1 ~ tendance_shoc_niv1 +
+#      + regime + detectabilite + gregaire + popularite + abondance_log + #migrateur_simplifie
+#     sexe + anciennete +
+#     expert + # participation_stoc + participation_shoc + participation_epoc + cocheur + bagueur +
+#     tendances_stoc, # + tendance_shoc + tendances_stoc_simplifie,
+#   data = dt2,
+#   Hess = TRUE
+# )
+
+# model ------------------------------------------------------------------------
+
+modele_all_1 <- polr(
+   avis_niv1 ~ tendance_shoc_niv1 + 
+     # migrateur + regime +
+     detectabilite + gregaire + popularite + abondance_log + sexe + anciennete + expert + 
+     # tendance_shoc_niv1:migrateur +
+     # tendance_shoc_niv1:regime +
+     tendance_shoc_niv1:detectabilite +
+     tendance_shoc_niv1:gregaire +
+     tendance_shoc_niv1:popularite +
+     tendance_shoc_niv1:abondance_log +
+     tendance_shoc_niv1:sexe +
+     tendance_shoc_niv1:anciennete +
+     # tendance_shoc_niv1:tendances_stoc +
+     tendance_shoc_niv1:expert, 
+    data = dt2,
+  Hess = TRUE
+)
+
+modele_all_1 <- stepAIC(
+  modele_all_1,
+  direction = "both",
+  trace = FALSE
+)
+
+# p-value ----------------------------------------------------------------------
+
+ctable_all_1 <- coef(summary(modele_all_1))
+p_values_all_1 <- pnorm(abs(ctable_all_1[, "t value"]), lower.tail = FALSE) * 2
+cbind(ctable_all_1, "p value" = p_values_all_1)
+
+# plot -------------------------------------------------------------------------
+
+ctable_all_1 <- as.data.frame(ctable_all_1)
+
+res_all_1 <- as.data.frame(ctable_all_1) %>%
+  mutate(
+    variable = rownames(ctable_all_1),
+    p_value = p_values_all_1,
+    signif = case_when(
+      p_value < 0.001 ~ "***", 
+      p_value < 0.01  ~ "**",
+      p_value < 0.05  ~ "*",
+      TRUE            ~ "ns"
+    ),
+    lower = Value - 1.96 * ctable_all_1$`Std. Error`,
+    upper = Value + 1.96 * ctable_all_1$`Std. Error`
+  )
+
+res_plot_all_1 <- res_all_1 %>%
+  filter(!grepl("\\|", variable))
+
+res_plot_all_1$variable <- factor(
+  res_plot_all_1$variable,
+  levels = res_plot_all_1$variable[order(res_plot_all_1$Value)]
+)
+
+# OR, échelle interprétable 
+# Un odds ratio (OR) se lit comme :
+# « multiplicateur des chances d’être classé dans une catégorie d’avis plus élevée plutôt qu’une catégorie plus basse »
+
+res_plot_all_1 <- res_plot_all_1 %>%
+  mutate(
+    OR = exp(Value),
+    OR_lower = exp(lower),
+    OR_upper = exp(upper)
+  )
+
+# nom des variables :
+unique(res_plot_all_1$variable)
+res_plot_all_1$variable <- fct_recode(res_plot_all_1$variable,
+                                "Detectabilite (Forte)" = "detectabiliteForte",
+                                "Gregaire (Oui)" = "gregaireOui",
+                                "Popularite (Oui)" = "populariteOui",
+                                "Abondance" = "abondance_log",
+                                "Sexe (H)" = "sexeH",
+                                "Anciennete" = "anciennete",
+                                "SHOC - Linéaire : Detectabilite (Forte)" = "tendance_shoc_niv1.L:detectabiliteForte",
+                                "SHOC (Déclin) : Détectabilité (Forte)" = "tendance_shoc_niv1Déclin:detectabiliteForte",
+                                "SHOC (Stable) : Détectabilité (Forte)" = "tendance_shoc_niv1Stable:detectabiliteForte ",
+                                "SHOC (Augmentation) : Détectabilité (Forte)" = "tendance_shoc_niv1Augmentation:detectabiliteForte",
+                                "SHOC (Déclin) : Grégaire (Oui)" = "tendance_shoc_niv1Déclin:gregaireOui",
+                                "STOC (Déclin modéré)" = "tendances_stocDéclin modéré",
+                                "SHOC (Stable) : Détectabilité (Forte)" = "tendance_shoc_niv1Stable:detectabiliteOui",
+                                "SHOC (Stable) : Grégaire (Oui)" = "tendance_shoc_niv1Stable:gregaireOui",
+                                "SHOC (Augmentation) : Grégaire (Oui)" = "tendance_shoc_niv1Augmentation:gregaireOui",
+                                "SHOC - Linéaire" = "tendance_shoc_niv1.L",
+                                "SHOC - Linéaire : Detectabilite (Forte)" = "tendance_shoc_niv1.L:detectabiliteForte",
+                                "SHOC - Linéaire : Gregaire (Oui)" = "tendance_shoc_niv1.L:gregaireOui",
+                                "SHOC - Linéaire : Abondance" = "tendance_shoc_niv1.L:abondance_log",
+                                "SHOC - Linéaire : Popularité (Oui)" = "tendance_shoc_niv1.L:populariteOui",
+                                "SHOC - Linéaire : Sexe (H)" = "tendance_shoc_niv1.L:sexeH",
+                                "SHOC - Linéaire : Ancienneté" = "tendance_shoc_niv1.L:anciennete",
+                                "SHOC - Quadratique" = "tendance_shoc_niv1.Q",
+                                "SHOC - Quadratique : Detectabilite (Forte)" = "tendance_shoc_niv1.Q:detectabiliteForte",
+                                "SHOC - Quadratique : Gregaire (Oui)" = "tendance_shoc_niv1.Q:gregaireOui",
+                                "SHOC - Quadratique : Abondance" = "tendance_shoc_niv1.Q:abondance_log",
+                                "SHOC - Quadratique : Popularité (Oui)" = "tendance_shoc_niv1.Q:populariteOui",
+                                "SHOC - Quadratique : Sexe (H)" = "tendance_shoc_niv1.Q:sexeH",
+                                "SHOC - Quadratique : Ancienneté" = "tendance_shoc_niv1.Q:anciennete")
+
+# plot 
+ggplot(res_plot_all_1, aes(x = OR, y = variable, fill = signif)) +
+  geom_vline(xintercept = 1, linetype = "dashed", color = "grey40") +
+  geom_errorbarh(
+    aes(xmin = OR_lower, xmax = OR_upper),
+    height = 0.2
+  ) +
+  geom_point(size = 3, shape = 21, color = "grey") +
+  scale_fill_manual(
+    values = c("***" = "#177B5D", "**" = "#66c2a5", "*" = "#7CEAC7", "ns" = "white")
+  ) +
+  scale_x_log10(
+    breaks = c(0.015625, 0.03125, 0.0625, 0.125, 0.25, 0.5, 1, 2, 4, 8),
+    labels = c("64X mois", "32X mois", "16X mois", "8X mois", "4× moins", "2× moins", "pas d'effet", "2× plus", "4× plus", "8× plus")
+  ) +
+  labs(
+    x = "Chances d’être classé dans une catégorie d’avis plus élevée",
+    y = "",
+    color = "Significativité",
+    title = ""
+  ) +
+  theme_minimal(base_size = 13) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+```
+
+# save environnement
+
+```{r}
+save.image(file = "SHOC-humain.RData")
+```
+
+# OLD OLD OLD OLD
 
 # glmer
 
@@ -1719,7 +4107,7 @@ vars_2 <- c("abondance_log","anciennete")
 dataset[vars_2] <- lapply(dataset[vars_2], as.numeric)
 ```
 
-## _espece
+## \_espece
 
 ```{r}
 dt_model_espece_alone <- dataset %>% 
@@ -1740,9 +4128,9 @@ m_espece_alone <- glmer(comparaison_niv1 ~ espece +
 summary(m_espece_alone)
 ```
 
-## _step1
+## \_step1
 
-### _1 trait
+### \_1 trait
 
 ```{r}
 #| echo: false
@@ -1792,7 +4180,7 @@ best_1 <- get.models(dd_1, 1)[[1]]
 summary(best_1)
 ```
 
-###_2 SP
+###\_2 SP
 
 ```{r}
 #| eval: false
@@ -1843,7 +4231,7 @@ best_2 <- get.models(dd_2, 1)[[1]]
 summary(best_2)
 ```
 
-### _3 participant
+### \_3 participant
 
 ```{r}
 #| eval: false
@@ -1894,7 +4282,7 @@ best_3 <- get.models(dd_3, 1)[[1]]
 summary(best_3)
 ```
 
-### _4 tendances
+### \_4 tendances
 
 ```{r}
 #| eval: false
@@ -1945,9 +4333,9 @@ best_4 <- get.models(dd_4, 1)[[1]]
 summary(best_4)
 ```
 
-## _step2
+## \_step2
 
-### _1
+### \_1
 
 ```{r}
 #| eval: false
@@ -2008,7 +4396,7 @@ print("best final model !!!!!!!")
 summary(best_2.1)
 ```
 
-### _2 interaction
+### \_2 interaction
 
 ```{r}
 #| eval: false
@@ -2064,461 +4452,6 @@ dd_2.2
 best_2.2 <- get.models(dd_2.2, 1)[[1]]
 summary(best_2.2)
 ```
-
-# intelligence collective
-
-## variables
-
-avis_niv1 = "Déclin" ~ -1,"Augmentation" ~ 1, "Stable" ~ 0
-
-round 
-
-ou
-
-mean avis <= -0.2 ~ "Déclin", mean avis >= 0.2 ~ "Augmentation", -0.2 < mean avis > 0.2 ~ "Stable"
-
-```{r}
-#| echo: false
-dataset_intel <- dataset %>% 
-  filter(avis_niv1 != "Incertain") %>% 
-  mutate(avis_niv1_intel = case_when(avis_niv1 == "Déclin" ~ -1,
-                                     avis_niv1 == "Augmentation" ~ 1,
-                                     avis_niv1 == "Stable" ~ 0))
-
-dataset_intel <- dataset_intel[!is.na(dataset_intel$avis_niv1_intel),]
-
-table(dataset_intel$avis_niv1_intel, useNA = "always")
-
-mean_intel_dt <- dataset_intel %>% 
-  group_by(espece) %>%
-  summarise(mean_avis_niv1_intel = mean(avis_niv1_intel),
-            sd_avis_niv1_intel = sd(avis_niv1_intel)) %>% 
-  # round
-  mutate(round_avis_niv1_intel = round(mean_avis_niv1_intel),
-         round_avis_niv1_intel_cat = case_when(round_avis_niv1_intel == "-1" ~ "Déclin",
-                                     round_avis_niv1_intel == "1" ~ "Augmentation",
-                                     round_avis_niv1_intel == "0" ~ "Stable")) %>%    
-  # quartile02
-  mutate(quantile02_avis_niv1_intel = round(mean_avis_niv1_intel),
-         quantile02_avis_niv1_intel_cat = case_when(mean_avis_niv1_intel <= -0.2 ~ "Déclin",
-                                          mean_avis_niv1_intel >= 0.2 ~ "Augmentation",
-                                          between(mean_avis_niv1_intel, -0.2,0.2) ~ "Stable"))
-  
-```
-
-## Chi² : shoc vs round
-
-```{r}
-#| echo: false
-obs_round <- table(mean_intel_dt$round_avis_niv1_intel_cat)
-
-tendance_shoc <- dataset %>% 
-  dplyr::select(espece, tendance_shoc_niv1) %>% 
-  distinct() 
-
-obs_shoc <- table(tendance_shoc$tendance_shoc_niv1)
-
-categories_communes <- intersect(names(obs_shoc), names(obs_round))
-
-obs_shoc_c <- obs_shoc[categories_communes]
-obs_round_c <- obs_round[categories_communes]
-
-tab_chi2_round <- rbind(
-  SHOC = obs_shoc_c,
-  AVIS = obs_round
-)
-
-tab_chi2_round
-
-chisq.test(tab_chi2_round)
-
-res_round <- chisq.test(tab_chi2_round)
-
-print("résidus")
-res_round$stdres
-
-print("proportions")
-prop.table(tab_chi2_round, margin = 1)
-```
-
-## Chi² : shoc vs quantile 0.2
-
-```{r}
-#| echo: false
-obs_quantile02 <- table(mean_intel_dt$quantile02_avis_niv1_intel_cat)
-
-tendance_shoc <- dataset %>% 
-  dplyr::select(espece, tendance_shoc_niv1) %>% 
-  distinct() 
-
-obs_shoc <- table(tendance_shoc$tendance_shoc_niv1)
-
-categories_communes <- intersect(names(obs_shoc), names(obs_quantile02))
-
-obs_shoc_c <- obs_shoc[categories_communes]
-obs_quantile02_c <- obs_quantile02[categories_communes]
-
-tab_chi2_quantile02 <- rbind(
-  SHOC = obs_shoc_c,
-  AVIS = obs_quantile02
-)
-
-tab_chi2_quantile02
-
-chisq.test(tab_chi2_quantile02)
-
-res_quantile02 <- chisq.test(tab_chi2_quantile02)
-
-print("résidus")
-res_quantile02$stdres
-
-print("proportions")
-prop.table(tab_chi2_quantile02, margin = 1)
-```
-
-## tendances par espece
-
-```{r}
-mean_intel_dt <- mean_intel_dt %>% 
-  left_join(tendance_shoc)
-
-dt_intel_quantile02 <- mean_intel_dt %>% 
-  dplyr::select(espece, round_avis_niv1_intel_cat, quantile02_avis_niv1_intel_cat, tendance_shoc_niv1) %>% 
-  rename(espece = espece, 
-         `tendance moyenne arrondie quiz` = round_avis_niv1_intel_cat, 
-         `tendance moyenne quantile (-0.2, 0.2) quiz` = quantile02_avis_niv1_intel_cat, 
-         `tendance stat SHOC` = tendance_shoc_niv1)
-
-dt_intel_quantile02 %>%
-  datatable(extensions = 'Buttons',
-            options = list(dom = 'Blfrtip',
-                           buttons = c('copy', 'csv', 'excel', 'pdf', 'print'),
-                           lengthMenu = list(c(10,25,50,-1),
-                                             c(10,25,50,"All"))))
-
-dt_intel_quantile02
-```
-
-## variabilité des réponses par espece
-
-Pas de correlation entre le tendances moyennes estimées collectivement et la variation (écart-type) dans les réponses
-
-```{r}
-plot(mean_intel_dt$mean_avis_niv1_intel, mean_intel_dt$sd_avis_niv1_intel)
-summary(lm(mean_intel_dt$mean_avis_niv1_intel ~ mean_intel_dt$sd_avis_niv1_intel))
-```
-
-# analyses ordinales
-
-## données
-
-```{r}
-#| include: false
-
-colnames(dataset)
-
-dt1 <- dataset %>% 
-  dplyr::select("email","espece","avis_niv1","migrateur","migrateur_simplifie","regime","detectabilite","gregaire","popularite",
-                "abondance_log","departement","participation_stoc","participation_shoc","participation_epoc","sexe","cocheur",
-                "anciennete","region","bioregion","bagueur","expert","tendance_shoc","tendances_stoc","tendances_stoc_simplifie",
-                "tendance_shoc_niv1") %>% 
-  na.omit()
-
-dt1 <- dt1 %>%
-  mutate(
-    avis_niv1 = factor(
-      avis_niv1,
-      levels = c("Déclin", "Stable", "Augmentation"),
-      ordered = TRUE
-    ),
-    tendance_shoc_niv1 = factor(
-      tendance_shoc_niv1,
-      levels = c("Déclin", "Stable", "Augmentation"),
-      ordered = TRUE
-    )
-  ) %>% 
-  na.omit()
-
-```
-
-## modèle
-
-```{r}
-#| eval: false
-#| include: false
-
-modele_full <- polr(
-   avis_niv1 ~ tendance_shoc_niv1 +
-    migrateur + regime + detectabilite + gregaire + popularite + abondance_log + #migrateur_simplifie
-    sexe + anciennete +
-    expert + # participation_stoc + participation_shoc + participation_epoc + cocheur + bagueur +
-    tendances_stoc, # + tendance_shoc + tendances_stoc_simplifie,
-  data = dt1,
-  Hess = TRUE
-)
-
-library(MASS)
-
-modele_sel <- stepAIC(
-  modele_full,
-  direction = "both",
-  trace = FALSE
-)
-```
-
-## p-val
-
-```{r}
-summary(modele_sel)
-ctable <- coef(summary(modele_sel))
-p_values <- pnorm(abs(ctable[, "t value"]), lower.tail = FALSE) * 2
-cbind(ctable, "p value" = p_values)
-```
-
-## plot 
-
-```{r}
-#| echo: false
-ctable <- as.data.frame(ctable)
-
-res <- as.data.frame(ctable) %>%
-  mutate(
-    variable = rownames(ctable),
-    p_value = ctable$p_values,
-    signif = case_when(
-      p_value < 0.001 ~ "***",
-      p_value < 0.01  ~ "**",
-      p_value < 0.05  ~ "*",
-      TRUE            ~ "ns"
-    ),
-    lower = Value - 1.96 * ctable$`Std. Error`,
-    upper = Value + 1.96 * ctable$`Std. Error`
-  )
-
-res_plot <- res %>%
-  filter(!grepl("\\|", variable))
-
-res_plot$variable <- factor(
-  res_plot$variable,
-  levels = res_plot$variable[order(res_plot$Value)]
-)
-
-# echelle non transformée
-# ggplot(res_plot, aes(x = Value, y = variable, fill = signif)) +
-#   geom_vline(xintercept = 0, linetype = "dashed", color = "grey50") +
-#   geom_errorbarh(aes(xmin = lower, xmax = upper), height = 0.2) +
-#   geom_point(size = 3, shape = 21) +
-#   scale_fill_manual(
-#     values = c("***" = "#177B5D", "**" = "#66c2a5", "*" = "#7CEAC7", "ns" = "white")
-#   ) +
-#   labs(
-#     x = "Taille d'effet (log-odds)",
-#     y = "",
-#     color = "Significativité",
-#     title = "Effets des variables explicatives sur l’avis (modèle ordinal)"
-#   ) +
-#   theme_minimal(base_size = 13)
-
-
-# OR, échelle interprétable 
-# Un odds ratio (OR) se lit comme :
-# « multiplicateur des chances d’être classé dans une catégorie d’avis plus élevée plutôt qu’une catégorie plus basse »
-
-res_plot <- res_plot %>%
-  mutate(
-    OR = exp(Value),
-    OR_lower = exp(lower),
-    OR_upper = exp(upper)
-  )
-
-# nom des variables :
-
-res_plot$variable <- fct_recode(res_plot$variable,
-                                "STOC (Déclin modéré à fort)" = "tendances_stocDéclin modéré à fort",
-                                "STOC (Stable)" = "tendances_stocStable",
-                                "STOC (Déclin fort)" = "tendances_stocDéclin fort",
-                                "Gregaire (Oui)" = "gregaireOui",
-                                "STOC (Déclin modéré)" = "tendances_stocDéclin modéré",
-                                "Abondance" = "abondance_log",
-                                "SHOC - Quadratique" = "tendance_shoc_niv1.Q",
-                                "STOC (Augmentation modérée)" = "tendances_stocAugmentation modérée",
-                                "Expert (Oui)" = "expertOui",
-                                "SHOC - Linéaire" = "tendance_shoc_niv1.L",
-                                "Sexe (H)" = "sexeH",
-                                "Migrateur (Partiel)" = "migrateurPartiel",
-                                "Popularite (Oui)" = "populariteOui",
-                                "Migrateur (Oui)" = "migrateurOui",
-                                "STOC (Augmentation modérée à forte)" = "tendances_stocAugmentation modérée à forte")
-                                
-
-ggplot(res_plot, aes(x = OR, y = variable, fill = signif)) +
-  geom_vline(xintercept = 1, linetype = "dashed", color = "grey40") +
-  geom_errorbarh(
-    aes(xmin = OR_lower, xmax = OR_upper),
-    height = 0.2
-  ) +
-  geom_point(size = 3, shape = 21, color = "grey") +
-  scale_fill_manual(
-    values = c("***" = "#177B5D", "**" = "#66c2a5", "*" = "#7CEAC7", "ns" = "white")
-  ) +
-  # geom_point(size = 3) +
-  scale_x_log10(
-    breaks = c(0.25, 0.5, 1, 2, 4, 8),
-    labels = c("4× moins", "2× moins", "pas d'effet", "2× plus", "4× plus", "8× plus")
-  ) +
-  labs(
-    x = "Chances d’être classé dans une catégorie d’avis plus élevée",
-    y = "",
-    color = "Significativité",
-    title = "Effets des variables explicatives sur l’avis (odds ratios)"
-  ) +
-  theme_minimal(base_size = 13) +
-  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
-```
-
-## modèle de base
-
-```{r}
-#| include: false
-
-modele_base <- polr(
-   avis_niv1 ~ tendance_shoc_niv1,
-    data = dt1,
-  Hess = TRUE
-)
-
-modele_base <- stepAIC(
-  modele_base,
-  direction = "both",
-  trace = FALSE
-)
-```
-
-## p-val
-
-```{r}
-#| echo: false
-summary(modele_base)
-ctable_base <- coef(summary(modele_base))
-p_values_base <- pnorm(abs(ctable_base[, "t value"]), lower.tail = FALSE) * 2
-cbind(ctable_base, "p value" = p_values_base)
-```
-
-## plot 
-
-```{r}
-#| echo: false
-ctable_base <- as.data.frame(ctable_base)
-
-res_base <- as.data.frame(ctable_base) %>%
-  mutate(
-    variable = rownames(ctable_base),
-    p_value = ctable_base$p_values,
-    signif = case_when(
-      p_value < 0.001 ~ "***",
-      p_value < 0.01  ~ "**",
-      p_value < 0.05  ~ "*",
-      TRUE            ~ "ns"
-    ),
-    lower = Value - 1.96 * ctable_base$`Std. Error`,
-    upper = Value + 1.96 * ctable_base$`Std. Error`
-  )
-
-res_plot_base <- res_base %>%
-  filter(!grepl("\\|", variable))
-
-res_plot_base$variable <- factor(
-  res_plot_base$variable,
-  levels = res_plot_base$variable[order(res_plot_base$Value)]
-)
-
-# OR, échelle interprétable 
-# Un odds ratio (OR) se lit comme :
-# « multiplicateur des chances d’être classé dans une catégorie d’avis plus élevée plutôt qu’une catégorie plus basse »
-
-res_plot_base <- res_plot_base %>%
-  mutate(
-    OR = exp(Value),
-    OR_lower = exp(lower),
-    OR_upper = exp(upper)
-  )
-
-# nom des variables :
-res_plot_base$variable <- fct_recode(res_plot_base$variable,
-                                "SHOC - Quadratique" = "tendance_shoc_niv1.Q",
-                                "SHOC - Linéaire" = "tendance_shoc_niv1.L")
-                                
-
-ggplot(res_plot_base, aes(x = OR, y = variable, fill = signif)) +
-  geom_vline(xintercept = 1, linetype = "dashed", color = "grey40") +
-  geom_errorbarh(
-    aes(xmin = OR_lower, xmax = OR_upper),
-    height = 0.2
-  ) +
-  geom_point(size = 3, shape = 21, color = "grey") +
-  scale_fill_manual(
-    values = c("***" = "#177B5D", "**" = "#66c2a5", "*" = "#7CEAC7", "ns" = "white")
-  ) +
-  # geom_point(size = 3) +
-  scale_x_log10(
-    breaks = c(0.25, 0.5, 1, 2, 4, 8),
-    labels = c("4× moins", "2× moins", "pas d'effet", "2× plus", "4× plus", "8× plus")
-  ) +
-  labs(
-    x = "Chances d’être classé dans une catégorie d’avis plus élevée",
-    y = "",
-    color = "Significativité",
-    title = "Effets des variables explicatives sur l’avis (odds ratios)"
-  ) +
-  theme_minimal(base_size = 13) +
-  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
-```
-
-
-## modèle interaction
-
-```{r}
-#| eval: false
-#| include: false
-
-modele_inter <- polr(
-   avis_niv1 ~ tendance_shoc_niv1*detectabilite +
-     expert+
-     migrateur + 
-     regime + detectabilite + gregaire + popularite + abondance_log + #migrateur_simplifie
-    sexe + anciennete +
-    expert + # participation_stoc + participation_shoc + participation_epoc + cocheur + bagueur +
-    tendances_stoc, # + tendance_shoc + tendances_stoc_simplifie,
-  data = dt1,
-  Hess = TRUE
-)
-
-library(MASS)
-
-modele_sel <- stepAIC(
-  modele_inter,
-  direction = "both",
-  trace = FALSE
-)
-```
-
-## p-val
-
-```{r}
-summary(modele_inter)
-ctable <- coef(summary(modele_inter))
-p_values <- pnorm(abs(ctable[, "t value"]), lower.tail = FALSE) * 2
-cbind(ctable, "p value" = p_values)
-```
-
-
-# save environnement
-
-```{r}
-save.image(file = "SHOC-humain.RData")
-```
-
-# OLD OLD OLD OLD
 
 ## (niv2)
 
@@ -2838,6 +4771,1536 @@ m_niv2.espece.participant.13 <- glmer(comparaison_niv2 ~ regime*tendances_stoc_s
 compare_performance(m_niv2.espece.participant.1,m_niv2.espece.participant.11,m_niv2.espece.participant.12,m_niv2.espece.participant.13)
 AIC(m_niv2.espece.participant.1,m_niv2.espece.participant.11,m_niv2.espece.participant.12,m_niv2.espece.participant.13)
 summary(m_niv2.espece.participant.12)
+```
+
+## avis niv 1
+
+### données
+
+```{r}
+#| include: false
+
+colnames(dataset)
+
+dt1 <- dataset %>% 
+  dplyr::select("email","espece","avis_niv1","migrateur","migrateur_simplifie","regime",
+                "detectabilite","gregaire","popularite",
+                "abondance_log","departement","participation_stoc","participation_shoc",
+                "participation_epoc","sexe","cocheur",
+                "anciennete","region","bioregion","bagueur","expert","tendance_shoc",
+                "tendances_stoc","tendances_stoc_simplifie",
+                "tendance_shoc_niv1") %>% 
+  na.omit()
+
+dt1 <- dt1 %>%
+  mutate(
+    avis_niv1 = factor(
+      avis_niv1,
+      levels = c("Déclin", "Stable", "Augmentation"),
+      ordered = TRUE
+    ),
+    tendance_shoc_niv1 = factor(
+      tendance_shoc_niv1,
+      levels = c("Déclin", "Stable", "Augmentation"),
+      ordered = TRUE
+    )
+  ) %>% 
+  na.omit()
+
+```
+
+### m0
+
+```{r}
+#| echo: false
+
+# model ------------------------------------------------------------------------
+
+modele_base <- polr(
+   avis_niv1 ~ tendance_shoc_niv1,
+    data = dt1,
+  Hess = TRUE
+)
+
+modele_base <- stepAIC(
+  modele_base,
+  direction = "both",
+  trace = FALSE
+)
+
+# p-value ----------------------------------------------------------------------
+
+ctable_base <- coef(summary(modele_base))
+p_values_base <- pnorm(abs(ctable_base[, "t value"]), lower.tail = FALSE) * 2
+cbind(ctable_base, "p value" = p_values_base)
+
+# plot -------------------------------------------------------------------------
+
+ctable_base <- as.data.frame(ctable_base)
+
+res_base <- as.data.frame(ctable_base) %>%
+  mutate(
+    variable = rownames(ctable_base),
+    p_value = p_values_base,
+    signif = case_when(
+      p_value < 0.001 ~ "***", 
+      p_value < 0.01  ~ "**",
+      p_value < 0.05  ~ "*",
+      TRUE            ~ "ns"
+    ),
+    lower = Value - 1.96 * ctable_base$`Std. Error`,
+    upper = Value + 1.96 * ctable_base$`Std. Error`
+  )
+
+res_plot_base <- res_base %>%
+  filter(!grepl("\\|", variable))
+
+res_plot_base$variable <- factor(
+  res_plot_base$variable,
+  levels = res_plot_base$variable[order(res_plot_base$Value)]
+)
+
+# OR, échelle interprétable 
+# Un odds ratio (OR) se lit comme :
+# « multiplicateur des chances d’être classé dans une catégorie d’avis plus élevée plutôt qu’une catégorie plus basse »
+
+res_plot_base <- res_plot_base %>%
+  mutate(
+    OR = exp(Value),
+    OR_lower = exp(lower),
+    OR_upper = exp(upper)
+  )
+
+# nom des variables :
+res_plot_base$variable <- fct_recode(res_plot_base$variable,
+                                "SHOC - Quadratique" = "tendance_shoc_niv1.Q",
+                                "SHOC - Linéaire" = "tendance_shoc_niv1.L")
+                                
+# plot 
+ggplot(res_plot_base, aes(x = OR, y = variable, fill = signif)) +
+  geom_vline(xintercept = 1, linetype = "dashed", color = "grey40") +
+  geom_errorbarh(
+    aes(xmin = OR_lower, xmax = OR_upper),
+    height = 0.2
+  ) +
+  geom_point(size = 3, shape = 21, color = "grey") +
+  scale_fill_manual(
+    values = c("***" = "#177B5D", "**" = "#66c2a5", "*" = "#7CEAC7", "ns" = "white")
+  ) +
+  scale_x_log10(
+    breaks = c(0.25, 0.5, 1, 2, 4, 8),
+    labels = c("4× moins", "2× moins", "pas d'effet", "2× plus", "4× plus", "8× plus")
+  ) +
+  labs(
+    x = "Chances d’être classé dans une catégorie d’avis plus élevée",
+    y = "",
+    color = "Significativité",
+    title = "Effets des variables explicatives sur l’avis (odds ratios)"
+  ) +
+  theme_minimal(base_size = 13) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+```
+
+### migrateur
+
+```{r}
+#| echo: false
+
+# modele_full <- polr(
+#    avis_niv1 ~ tendance_shoc_niv1 +
+#      + regime + detectabilite + gregaire + popularite + abondance_log + #migrateur_simplifie
+#     sexe + anciennete +
+#     expert + # participation_stoc + participation_shoc + participation_epoc + cocheur + bagueur +
+#     tendances_stoc, # + tendance_shoc + tendances_stoc_simplifie,
+#   data = dt1,
+#   Hess = TRUE
+# )
+
+# model ------------------------------------------------------------------------
+
+modele_migrateur <- polr(
+   avis_niv1 ~ tendance_shoc_niv1*migrateur,
+    data = dt1,
+  Hess = TRUE
+)
+
+modele_migrateur <- stepAIC(
+  modele_migrateur,
+  direction = "both",
+  trace = FALSE
+)
+
+# p-value ----------------------------------------------------------------------
+
+ctable_migrateur <- coef(summary(modele_migrateur))
+p_values_migrateur <- pnorm(abs(ctable_migrateur[, "t value"]), lower.tail = FALSE) * 2
+cbind(ctable_migrateur, "p value" = p_values_migrateur)
+
+# plot -------------------------------------------------------------------------
+
+ctable_migrateur <- as.data.frame(ctable_migrateur)
+
+res_migrateur <- as.data.frame(ctable_migrateur) %>%
+  mutate(
+    variable = rownames(ctable_migrateur),
+    p_value = p_values_migrateur,
+    signif = case_when(
+      p_value < 0.001 ~ "***", 
+      p_value < 0.01  ~ "**",
+      p_value < 0.05  ~ "*",
+      TRUE            ~ "ns"
+    ),
+    lower = Value - 1.96 * ctable_migrateur$`Std. Error`,
+    upper = Value + 1.96 * ctable_migrateur$`Std. Error`
+  )
+
+res_plot_migrateur <- res_migrateur %>%
+  filter(!grepl("\\|", variable))
+
+res_plot_migrateur$variable <- factor(
+  res_plot_migrateur$variable,
+  levels = res_plot_migrateur$variable[order(res_plot_migrateur$Value)]
+)
+
+# OR, échelle interprétable 
+# Un odds ratio (OR) se lit comme :
+# « multiplicateur des chances d’être classé dans une catégorie d’avis plus élevée plutôt qu’une catégorie plus basse »
+
+res_plot_migrateur <- res_plot_migrateur %>%
+  mutate(
+    OR = exp(Value),
+    OR_lower = exp(lower),
+    OR_upper = exp(upper)
+  )
+
+# nom des variables :
+res_plot_migrateur$variable <- fct_recode(res_plot_migrateur$variable,
+                                "SHOC - Quadratique" = "tendance_shoc_niv1.Q",
+                                "SHOC - Linéaire" = "tendance_shoc_niv1.L")
+                                
+# plot 
+ggplot(res_plot_migrateur, aes(x = OR, y = variable, fill = signif)) +
+  geom_vline(xintercept = 1, linetype = "dashed", color = "grey40") +
+  geom_errorbarh(
+    aes(xmin = OR_lower, xmax = OR_upper),
+    height = 0.2
+  ) +
+  geom_point(size = 3, shape = 21, color = "grey") +
+  scale_fill_manual(
+    values = c("***" = "#177B5D", "**" = "#66c2a5", "*" = "#7CEAC7", "ns" = "white")
+  ) +
+  scale_x_log10(
+    breaks = c(0.25, 0.5, 1, 2, 4, 8),
+    labels = c("4× moins", "2× moins", "pas d'effet", "2× plus", "4× plus", "8× plus")
+  ) +
+  labs(
+    x = "Chances d’être classé dans une catégorie d’avis plus élevée",
+    y = "",
+    color = "Significativité",
+    title = "Effets des variables explicatives sur l’avis (odds ratios)"
+  ) +
+  theme_minimal(base_size = 13) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+```
+
+### regime
+
+```{r}
+#| echo: false
+
+# modele_full <- polr(
+#    avis_niv1 ~ tendance_shoc_niv1 +
+#      +  + detectabilite + gregaire + popularite + abondance_log + #migrateur_simplifie
+#     sexe + anciennete +
+#     expert + # participation_stoc + participation_shoc + participation_epoc + cocheur + bagueur +
+#     tendances_stoc, # + tendance_shoc + tendances_stoc_simplifie,
+#   data = dt1,
+#   Hess = TRUE
+# )
+
+# model ------------------------------------------------------------------------
+
+modele_regime <- polr(
+   avis_niv1 ~ tendance_shoc_niv1*regime,
+    data = dt1,
+  Hess = TRUE
+)
+
+modele_regime <- stepAIC(
+  modele_regime,
+  direction = "both",
+  trace = FALSE
+)
+
+# p-value ----------------------------------------------------------------------
+
+ctable_regime <- coef(summary(modele_regime))
+p_values_regime <- pnorm(abs(ctable_regime[, "t value"]), lower.tail = FALSE) * 2
+cbind(ctable_regime, "p value" = p_values_regime)
+
+# plot -------------------------------------------------------------------------
+
+ctable_regime <- as.data.frame(ctable_regime)
+
+res_regime <- as.data.frame(ctable_regime) %>%
+  mutate(
+    variable = rownames(ctable_regime),
+    p_value = p_values_regime,
+    signif = case_when(
+      p_value < 0.001 ~ "***", 
+      p_value < 0.01  ~ "**",
+      p_value < 0.05  ~ "*",
+      TRUE            ~ "ns"
+    ),
+    lower = Value - 1.96 * ctable_regime$`Std. Error`,
+    upper = Value + 1.96 * ctable_regime$`Std. Error`
+  )
+
+res_plot_regime <- res_regime %>%
+  filter(!grepl("\\|", variable))
+
+res_plot_regime$variable <- factor(
+  res_plot_regime$variable,
+  levels = res_plot_regime$variable[order(res_plot_regime$Value)]
+)
+
+# OR, échelle interprétable 
+# Un odds ratio (OR) se lit comme :
+# « multiplicateur des chances d’être classé dans une catégorie d’avis plus élevée plutôt qu’une catégorie plus basse »
+
+res_plot_regime <- res_plot_regime %>%
+  mutate(
+    OR = exp(Value),
+    OR_lower = exp(lower),
+    OR_upper = exp(upper)
+  )
+
+# nom des variables :
+res_plot_regime$variable <- fct_recode(res_plot_regime$variable,
+                                "SHOC - Quadratique" = "tendance_shoc_niv1.Q",
+                                "SHOC - Linéaire" = "tendance_shoc_niv1.L")
+                                
+# plot 
+ggplot(res_plot_regime, aes(x = OR, y = variable, fill = signif)) +
+  geom_vline(xintercept = 1, linetype = "dashed", color = "grey40") +
+  geom_errorbarh(
+    aes(xmin = OR_lower, xmax = OR_upper),
+    height = 0.2
+  ) +
+  geom_point(size = 3, shape = 21, color = "grey") +
+  scale_fill_manual(
+    values = c("***" = "#177B5D", "**" = "#66c2a5", "*" = "#7CEAC7", "ns" = "white")
+  ) +
+  scale_x_log10(
+    breaks = c(0.25, 0.5, 1, 2, 4, 8),
+    labels = c("4× moins", "2× moins", "pas d'effet", "2× plus", "4× plus", "8× plus")
+  ) +
+  labs(
+    x = "Chances d’être classé dans une catégorie d’avis plus élevée",
+    y = "",
+    color = "Significativité",
+    title = "Effets des variables explicatives sur l’avis (odds ratios)"
+  ) +
+  theme_minimal(base_size = 13) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+```
+
+### detectabilite
+
+```{r}
+#| echo: false
+
+# modele_full <- polr(
+#    avis_niv1 ~ tendance_shoc_niv1 +
+#      +  +  + gregaire + popularite + abondance_log + #migrateur_simplifie
+#     sexe + anciennete +
+#     expert + # participation_stoc + participation_shoc + participation_epoc + cocheur + bagueur +
+#     tendances_stoc, # + tendance_shoc + tendances_stoc_simplifie,
+#   data = dt1,
+#   Hess = TRUE
+# )
+
+# model ------------------------------------------------------------------------
+
+modele_detectabilite <- polr(
+   avis_niv1 ~ tendance_shoc_niv1*detectabilite,
+    data = dt1,
+  Hess = TRUE
+)
+
+modele_detectabilite <- stepAIC(
+  modele_detectabilite,
+  direction = "both",
+  trace = FALSE
+)
+
+# p-value ----------------------------------------------------------------------
+
+ctable_detectabilite <- coef(summary(modele_detectabilite))
+p_values_detectabilite <- pnorm(abs(ctable_detectabilite[, "t value"]), lower.tail = FALSE) * 2
+cbind(ctable_detectabilite, "p value" = p_values_detectabilite)
+
+# plot -------------------------------------------------------------------------
+
+ctable_detectabilite <- as.data.frame(ctable_detectabilite)
+
+res_detectabilite <- as.data.frame(ctable_detectabilite) %>%
+  mutate(
+    variable = rownames(ctable_detectabilite),
+    p_value = p_values_detectabilite,
+    signif = case_when(
+      p_value < 0.001 ~ "***", 
+      p_value < 0.01  ~ "**",
+      p_value < 0.05  ~ "*",
+      TRUE            ~ "ns"
+    ),
+    lower = Value - 1.96 * ctable_detectabilite$`Std. Error`,
+    upper = Value + 1.96 * ctable_detectabilite$`Std. Error`
+  )
+
+res_plot_detectabilite <- res_detectabilite %>%
+  filter(!grepl("\\|", variable))
+
+res_plot_detectabilite$variable <- factor(
+  res_plot_detectabilite$variable,
+  levels = res_plot_detectabilite$variable[order(res_plot_detectabilite$Value)]
+)
+
+# OR, échelle interprétable 
+# Un odds ratio (OR) se lit comme :
+# « multiplicateur des chances d’être classé dans une catégorie d’avis plus élevée plutôt qu’une catégorie plus basse »
+
+res_plot_detectabilite <- res_plot_detectabilite %>%
+  mutate(
+    OR = exp(Value),
+    OR_lower = exp(lower),
+    OR_upper = exp(upper)
+  )
+
+# nom des variables :
+res_plot_detectabilite$variable <- fct_recode(res_plot_detectabilite$variable,
+                                "SHOC - Quadratique" = "tendance_shoc_niv1.Q",
+                                "SHOC - Linéaire" = "tendance_shoc_niv1.L")
+                                
+# plot 
+ggplot(res_plot_detectabilite, aes(x = OR, y = variable, fill = signif)) +
+  geom_vline(xintercept = 1, linetype = "dashed", color = "grey40") +
+  geom_errorbarh(
+    aes(xmin = OR_lower, xmax = OR_upper),
+    height = 0.2
+  ) +
+  geom_point(size = 3, shape = 21, color = "grey") +
+  scale_fill_manual(
+    values = c("***" = "#177B5D", "**" = "#66c2a5", "*" = "#7CEAC7", "ns" = "white")
+  ) +
+  scale_x_log10(
+    breaks = c(0.25, 0.5, 1, 2, 4, 8),
+    labels = c("4× moins", "2× moins", "pas d'effet", "2× plus", "4× plus", "8× plus")
+  ) +
+  labs(
+    x = "Chances d’être classé dans une catégorie d’avis plus élevée",
+    y = "",
+    color = "Significativité",
+    title = "Effets des variables explicatives sur l’avis (odds ratios)"
+  ) +
+  theme_minimal(base_size = 13) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+```
+
+### gregaire
+
+```{r}
+#| echo: false
+
+# modele_full <- polr(
+#    avis_niv1 ~ tendance_shoc_niv1 +
+#      +  +  +  + popularite + abondance_log + 
+#     sexe + anciennete +
+#     expert + 
+#     tendances_stoc, 
+#   data = dt1,
+#   Hess = TRUE
+# )
+
+# model ------------------------------------------------------------------------
+
+modele_gregaire <- polr(
+   avis_niv1 ~ tendance_shoc_niv1*gregaire,
+    data = dt1,
+  Hess = TRUE
+)
+
+modele_gregaire <- stepAIC(
+  modele_gregaire,
+  direction = "both",
+  trace = FALSE
+)
+
+# p-value ----------------------------------------------------------------------
+
+ctable_gregaire <- coef(summary(modele_gregaire))
+p_values_gregaire <- pnorm(abs(ctable_gregaire[, "t value"]), lower.tail = FALSE) * 2
+cbind(ctable_gregaire, "p value" = p_values_gregaire)
+
+# plot -------------------------------------------------------------------------
+
+ctable_gregaire <- as.data.frame(ctable_gregaire)
+
+res_gregaire <- as.data.frame(ctable_gregaire) %>%
+  mutate(
+    variable = rownames(ctable_gregaire),
+    p_value = p_values_gregaire,
+    signif = case_when(
+      p_value < 0.001 ~ "***", 
+      p_value < 0.01  ~ "**",
+      p_value < 0.05  ~ "*",
+      TRUE            ~ "ns"
+    ),
+    lower = Value - 1.96 * ctable_gregaire$`Std. Error`,
+    upper = Value + 1.96 * ctable_gregaire$`Std. Error`
+  )
+
+res_plot_gregaire <- res_gregaire %>%
+  filter(!grepl("\\|", variable))
+
+res_plot_gregaire$variable <- factor(
+  res_plot_gregaire$variable,
+  levels = res_plot_gregaire$variable[order(res_plot_gregaire$Value)]
+)
+
+# OR, échelle interprétable 
+# Un odds ratio (OR) se lit comme :
+# « multiplicateur des chances d’être classé dans une catégorie d’avis plus élevée plutôt qu’une catégorie plus basse »
+
+res_plot_gregaire <- res_plot_gregaire %>%
+  mutate(
+    OR = exp(Value),
+    OR_lower = exp(lower),
+    OR_upper = exp(upper)
+  )
+
+# nom des variables :
+res_plot_gregaire$variable <- fct_recode(res_plot_gregaire$variable,
+                                "SHOC - Quadratique" = "tendance_shoc_niv1.Q",
+                                "SHOC - Linéaire" = "tendance_shoc_niv1.L")
+                                
+# plot 
+ggplot(res_plot_gregaire, aes(x = OR, y = variable, fill = signif)) +
+  geom_vline(xintercept = 1, linetype = "dashed", color = "grey40") +
+  geom_errorbarh(
+    aes(xmin = OR_lower, xmax = OR_upper),
+    height = 0.2
+  ) +
+  geom_point(size = 3, shape = 21, color = "grey") +
+  scale_fill_manual(
+    values = c("***" = "#177B5D", "**" = "#66c2a5", "*" = "#7CEAC7", "ns" = "white")
+  ) +
+  scale_x_log10(
+    breaks = c(0.25, 0.5, 1, 2, 4, 8),
+    labels = c("4× moins", "2× moins", "pas d'effet", "2× plus", "4× plus", "8× plus")
+  ) +
+  labs(
+    x = "Chances d’être classé dans une catégorie d’avis plus élevée",
+    y = "",
+    color = "Significativité",
+    title = "Effets des variables explicatives sur l’avis (odds ratios)"
+  ) +
+  theme_minimal(base_size = 13) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+```
+
+### popularite
+
+```{r}
+#| echo: false
+
+# modele_full <- polr(
+#    avis_niv1 ~ tendance_shoc_niv1 +
+#      +  +  +  +  + abondance_log + 
+#     sexe + anciennete +
+#     expert + 
+#     tendances_stoc, 
+#   data = dt1,
+#   Hess = TRUE
+# )
+
+# model ------------------------------------------------------------------------
+
+modele_popularite <- polr(
+   avis_niv1 ~ tendance_shoc_niv1*popularite,
+    data = dt1,
+  Hess = TRUE
+)
+
+modele_popularite <- stepAIC(
+  modele_popularite,
+  direction = "both",
+  trace = FALSE
+)
+
+# p-value ----------------------------------------------------------------------
+
+ctable_popularite <- coef(summary(modele_popularite))
+p_values_popularite <- pnorm(abs(ctable_popularite[, "t value"]), lower.tail = FALSE) * 2
+cbind(ctable_popularite, "p value" = p_values_popularite)
+
+# plot -------------------------------------------------------------------------
+
+ctable_popularite <- as.data.frame(ctable_popularite)
+
+res_popularite <- as.data.frame(ctable_popularite) %>%
+  mutate(
+    variable = rownames(ctable_popularite),
+    p_value = p_values_popularite,
+    signif = case_when(
+      p_value < 0.001 ~ "***", 
+      p_value < 0.01  ~ "**",
+      p_value < 0.05  ~ "*",
+      TRUE            ~ "ns"
+    ),
+    lower = Value - 1.96 * ctable_popularite$`Std. Error`,
+    upper = Value + 1.96 * ctable_popularite$`Std. Error`
+  )
+
+res_plot_popularite <- res_popularite %>%
+  filter(!grepl("\\|", variable))
+
+res_plot_popularite$variable <- factor(
+  res_plot_popularite$variable,
+  levels = res_plot_popularite$variable[order(res_plot_popularite$Value)]
+)
+
+# OR, échelle interprétable 
+# Un odds ratio (OR) se lit comme :
+# « multiplicateur des chances d’être classé dans une catégorie d’avis plus élevée plutôt qu’une catégorie plus basse »
+
+res_plot_popularite <- res_plot_popularite %>%
+  mutate(
+    OR = exp(Value),
+    OR_lower = exp(lower),
+    OR_upper = exp(upper)
+  )
+
+# nom des variables :
+res_plot_popularite$variable <- fct_recode(res_plot_popularite$variable,
+                                "SHOC - Quadratique" = "tendance_shoc_niv1.Q",
+                                "SHOC - Linéaire" = "tendance_shoc_niv1.L")
+                                
+# plot 
+ggplot(res_plot_popularite, aes(x = OR, y = variable, fill = signif)) +
+  geom_vline(xintercept = 1, linetype = "dashed", color = "grey40") +
+  geom_errorbarh(
+    aes(xmin = OR_lower, xmax = OR_upper),
+    height = 0.2
+  ) +
+  geom_point(size = 3, shape = 21, color = "grey") +
+  scale_fill_manual(
+    values = c("***" = "#177B5D", "**" = "#66c2a5", "*" = "#7CEAC7", "ns" = "white")
+  ) +
+  scale_x_log10(
+    breaks = c(0.25, 0.5, 1, 2, 4, 8),
+    labels = c("4× moins", "2× moins", "pas d'effet", "2× plus", "4× plus", "8× plus")
+  ) +
+  labs(
+    x = "Chances d’être classé dans une catégorie d’avis plus élevée",
+    y = "",
+    color = "Significativité",
+    title = "Effets des variables explicatives sur l’avis (odds ratios)"
+  ) +
+  theme_minimal(base_size = 13) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+```
+
+### abondance_log
+
+```{r}
+#| echo: false
+
+# modele_full <- polr(
+#    avis_niv1 ~ tendance_shoc_niv1 +
+#      +  +  +  +  +  + 
+#     sexe + anciennete +
+#     expert + 
+#     tendances_stoc, 
+#   data = dt1,
+#   Hess = TRUE
+# )
+
+# model ------------------------------------------------------------------------
+
+modele_abondance_log <- polr(
+   avis_niv1 ~ tendance_shoc_niv1*abondance_log,
+    data = dt1,
+  Hess = TRUE
+)
+
+modele_abondance_log <- stepAIC(
+  modele_abondance_log,
+  direction = "both",
+  trace = FALSE
+)
+
+# p-value ----------------------------------------------------------------------
+
+ctable_abondance_log <- coef(summary(modele_abondance_log))
+p_values_abondance_log <- pnorm(abs(ctable_abondance_log[, "t value"]), lower.tail = FALSE) * 2
+cbind(ctable_abondance_log, "p value" = p_values_abondance_log)
+
+# plot -------------------------------------------------------------------------
+
+ctable_abondance_log <- as.data.frame(ctable_abondance_log)
+
+res_abondance_log <- as.data.frame(ctable_abondance_log) %>%
+  mutate(
+    variable = rownames(ctable_abondance_log),
+    p_value = p_values_abondance_log,
+    signif = case_when(
+      p_value < 0.001 ~ "***", 
+      p_value < 0.01  ~ "**",
+      p_value < 0.05  ~ "*",
+      TRUE            ~ "ns"
+    ),
+    lower = Value - 1.96 * ctable_abondance_log$`Std. Error`,
+    upper = Value + 1.96 * ctable_abondance_log$`Std. Error`
+  )
+
+res_plot_abondance_log <- res_abondance_log %>%
+  filter(!grepl("\\|", variable))
+
+res_plot_abondance_log$variable <- factor(
+  res_plot_abondance_log$variable,
+  levels = res_plot_abondance_log$variable[order(res_plot_abondance_log$Value)]
+)
+
+# OR, échelle interprétable 
+# Un odds ratio (OR) se lit comme :
+# « multiplicateur des chances d’être classé dans une catégorie d’avis plus élevée plutôt qu’une catégorie plus basse »
+
+res_plot_abondance_log <- res_plot_abondance_log %>%
+  mutate(
+    OR = exp(Value),
+    OR_lower = exp(lower),
+    OR_upper = exp(upper)
+  )
+
+# nom des variables :
+res_plot_abondance_log$variable <- fct_recode(res_plot_abondance_log$variable,
+                                "SHOC - Quadratique" = "tendance_shoc_niv1.Q",
+                                "SHOC - Linéaire" = "tendance_shoc_niv1.L")
+                                
+# plot 
+ggplot(res_plot_abondance_log, aes(x = OR, y = variable, fill = signif)) +
+  geom_vline(xintercept = 1, linetype = "dashed", color = "grey40") +
+  geom_errorbarh(
+    aes(xmin = OR_lower, xmax = OR_upper),
+    height = 0.2
+  ) +
+  geom_point(size = 3, shape = 21, color = "grey") +
+  scale_fill_manual(
+    values = c("***" = "#177B5D", "**" = "#66c2a5", "*" = "#7CEAC7", "ns" = "white")
+  ) +
+  scale_x_log10(
+    breaks = c(0.25, 0.5, 1, 2, 4, 8),
+    labels = c("4× moins", "2× moins", "pas d'effet", "2× plus", "4× plus", "8× plus")
+  ) +
+  labs(
+    x = "Chances d’être classé dans une catégorie d’avis plus élevée",
+    y = "",
+    color = "Significativité",
+    title = "Effets des variables explicatives sur l’avis (odds ratios)"
+  ) +
+  theme_minimal(base_size = 13) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+```
+
+### sexe
+
+```{r}
+#| echo: false
+
+# modele_full <- polr(
+#    avis_niv1 ~ tendance_shoc_niv1 +
+#      +  +  +  +  +  + 
+#      + anciennete +
+#     expert + 
+#     tendances_stoc, 
+#   data = dt1,
+#   Hess = TRUE
+# )
+
+# model ------------------------------------------------------------------------
+
+modele_sexe <- polr(
+   avis_niv1 ~ tendance_shoc_niv1*sexe,
+    data = dt1,
+  Hess = TRUE
+)
+
+modele_sexe <- stepAIC(
+  modele_sexe,
+  direction = "both",
+  trace = FALSE
+)
+
+# p-value ----------------------------------------------------------------------
+
+ctable_sexe <- coef(summary(modele_sexe))
+p_values_sexe <- pnorm(abs(ctable_sexe[, "t value"]), lower.tail = FALSE) * 2
+cbind(ctable_sexe, "p value" = p_values_sexe)
+
+# plot -------------------------------------------------------------------------
+
+ctable_sexe <- as.data.frame(ctable_sexe)
+
+res_sexe <- as.data.frame(ctable_sexe) %>%
+  mutate(
+    variable = rownames(ctable_sexe),
+    p_value = p_values_sexe,
+    signif = case_when(
+      p_value < 0.001 ~ "***", 
+      p_value < 0.01  ~ "**",
+      p_value < 0.05  ~ "*",
+      TRUE            ~ "ns"
+    ),
+    lower = Value - 1.96 * ctable_sexe$`Std. Error`,
+    upper = Value + 1.96 * ctable_sexe$`Std. Error`
+  )
+
+res_plot_sexe <- res_sexe %>%
+  filter(!grepl("\\|", variable))
+
+res_plot_sexe$variable <- factor(
+  res_plot_sexe$variable,
+  levels = res_plot_sexe$variable[order(res_plot_sexe$Value)]
+)
+
+# OR, échelle interprétable 
+# Un odds ratio (OR) se lit comme :
+# « multiplicateur des chances d’être classé dans une catégorie d’avis plus élevée plutôt qu’une catégorie plus basse »
+
+res_plot_sexe <- res_plot_sexe %>%
+  mutate(
+    OR = exp(Value),
+    OR_lower = exp(lower),
+    OR_upper = exp(upper)
+  )
+
+# nom des variables :
+res_plot_sexe$variable <- fct_recode(res_plot_sexe$variable,
+                                "SHOC - Quadratique" = "tendance_shoc_niv1.Q",
+                                "SHOC - Linéaire" = "tendance_shoc_niv1.L")
+                                
+# plot 
+ggplot(res_plot_sexe, aes(x = OR, y = variable, fill = signif)) +
+  geom_vline(xintercept = 1, linetype = "dashed", color = "grey40") +
+  geom_errorbarh(
+    aes(xmin = OR_lower, xmax = OR_upper),
+    height = 0.2
+  ) +
+  geom_point(size = 3, shape = 21, color = "grey") +
+  scale_fill_manual(
+    values = c("***" = "#177B5D", "**" = "#66c2a5", "*" = "#7CEAC7", "ns" = "white")
+  ) +
+  scale_x_log10(
+    breaks = c(0.25, 0.5, 1, 2, 4, 8),
+    labels = c("4× moins", "2× moins", "pas d'effet", "2× plus", "4× plus", "8× plus")
+  ) +
+  labs(
+    x = "Chances d’être classé dans une catégorie d’avis plus élevée",
+    y = "",
+    color = "Significativité",
+    title = "Effets des variables explicatives sur l’avis (odds ratios)"
+  ) +
+  theme_minimal(base_size = 13) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+```
+
+### anciennete
+
+```{r}
+#| echo: false
+
+# modele_full <- polr(
+#    avis_niv1 ~ tendance_shoc_niv1 +
+#      +  +  +  +  +  + 
+#      +  +
+#     expert + 
+#     tendances_stoc, 
+#   data = dt1,
+#   Hess = TRUE
+# )
+
+# model ------------------------------------------------------------------------
+
+modele_anciennete <- polr(
+   avis_niv1 ~ tendance_shoc_niv1*anciennete,
+    data = dt1,
+  Hess = TRUE
+)
+
+modele_anciennete <- stepAIC(
+  modele_anciennete,
+  direction = "both",
+  trace = FALSE
+)
+
+# p-value ----------------------------------------------------------------------
+
+ctable_anciennete <- coef(summary(modele_anciennete))
+p_values_anciennete <- pnorm(abs(ctable_anciennete[, "t value"]), lower.tail = FALSE) * 2
+cbind(ctable_anciennete, "p value" = p_values_anciennete)
+
+# plot -------------------------------------------------------------------------
+
+ctable_anciennete <- as.data.frame(ctable_anciennete)
+
+res_anciennete <- as.data.frame(ctable_anciennete) %>%
+  mutate(
+    variable = rownames(ctable_anciennete),
+    p_value = p_values_anciennete,
+    signif = case_when(
+      p_value < 0.001 ~ "***", 
+      p_value < 0.01  ~ "**",
+      p_value < 0.05  ~ "*",
+      TRUE            ~ "ns"
+    ),
+    lower = Value - 1.96 * ctable_anciennete$`Std. Error`,
+    upper = Value + 1.96 * ctable_anciennete$`Std. Error`
+  )
+
+res_plot_anciennete <- res_anciennete %>%
+  filter(!grepl("\\|", variable))
+
+res_plot_anciennete$variable <- factor(
+  res_plot_anciennete$variable,
+  levels = res_plot_anciennete$variable[order(res_plot_anciennete$Value)]
+)
+
+# OR, échelle interprétable 
+# Un odds ratio (OR) se lit comme :
+# « multiplicateur des chances d’être classé dans une catégorie d’avis plus élevée plutôt qu’une catégorie plus basse »
+
+res_plot_anciennete <- res_plot_anciennete %>%
+  mutate(
+    OR = exp(Value),
+    OR_lower = exp(lower),
+    OR_upper = exp(upper)
+  )
+
+# nom des variables :
+res_plot_anciennete$variable <- fct_recode(res_plot_anciennete$variable,
+                                "SHOC - Quadratique" = "tendance_shoc_niv1.Q",
+                                "SHOC - Linéaire" = "tendance_shoc_niv1.L")
+                                
+# plot 
+ggplot(res_plot_anciennete, aes(x = OR, y = variable, fill = signif)) +
+  geom_vline(xintercept = 1, linetype = "dashed", color = "grey40") +
+  geom_errorbarh(
+    aes(xmin = OR_lower, xmax = OR_upper),
+    height = 0.2
+  ) +
+  geom_point(size = 3, shape = 21, color = "grey") +
+  scale_fill_manual(
+    values = c("***" = "#177B5D", "**" = "#66c2a5", "*" = "#7CEAC7", "ns" = "white")
+  ) +
+  scale_x_log10(
+    breaks = c(0.25, 0.5, 1, 2, 4, 8),
+    labels = c("4× moins", "2× moins", "pas d'effet", "2× plus", "4× plus", "8× plus")
+  ) +
+  labs(
+    x = "Chances d’être classé dans une catégorie d’avis plus élevée",
+    y = "",
+    color = "Significativité",
+    title = "Effets des variables explicatives sur l’avis (odds ratios)"
+  ) +
+  theme_minimal(base_size = 13) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+```
+
+### expert
+
+```{r}
+#| echo: false
+
+# modele_full <- polr(
+#    avis_niv1 ~ tendance_shoc_niv1 +
+#      +  +  +  +  +  + 
+#      +  +
+#      + 
+#     tendances_stoc, 
+#   data = dt1,
+#   Hess = TRUE
+# )
+
+# model ------------------------------------------------------------------------
+
+modele_expert <- polr(
+   avis_niv1 ~ tendance_shoc_niv1*expert,
+    data = dt1,
+  Hess = TRUE
+)
+
+modele_expert <- stepAIC(
+  modele_expert,
+  direction = "both",
+  trace = FALSE
+)
+
+# p-value ----------------------------------------------------------------------
+
+ctable_expert <- coef(summary(modele_expert))
+p_values_expert <- pnorm(abs(ctable_expert[, "t value"]), lower.tail = FALSE) * 2
+cbind(ctable_expert, "p value" = p_values_expert)
+
+# plot -------------------------------------------------------------------------
+
+ctable_expert <- as.data.frame(ctable_expert)
+
+res_expert <- as.data.frame(ctable_expert) %>%
+  mutate(
+    variable = rownames(ctable_expert),
+    p_value = p_values_expert,
+    signif = case_when(
+      p_value < 0.001 ~ "***", 
+      p_value < 0.01  ~ "**",
+      p_value < 0.05  ~ "*",
+      TRUE            ~ "ns"
+    ),
+    lower = Value - 1.96 * ctable_expert$`Std. Error`,
+    upper = Value + 1.96 * ctable_expert$`Std. Error`
+  )
+
+res_plot_expert <- res_expert %>%
+  filter(!grepl("\\|", variable))
+
+res_plot_expert$variable <- factor(
+  res_plot_expert$variable,
+  levels = res_plot_expert$variable[order(res_plot_expert$Value)]
+)
+
+# OR, échelle interprétable 
+# Un odds ratio (OR) se lit comme :
+# « multiplicateur des chances d’être classé dans une catégorie d’avis plus élevée plutôt qu’une catégorie plus basse »
+
+res_plot_expert <- res_plot_expert %>%
+  mutate(
+    OR = exp(Value),
+    OR_lower = exp(lower),
+    OR_upper = exp(upper)
+  )
+
+# nom des variables :
+res_plot_expert$variable <- fct_recode(res_plot_expert$variable,
+                                "SHOC - Quadratique" = "tendance_shoc_niv1.Q",
+                                "SHOC - Linéaire" = "tendance_shoc_niv1.L")
+                                
+# plot 
+ggplot(res_plot_expert, aes(x = OR, y = variable, fill = signif)) +
+  geom_vline(xintercept = 1, linetype = "dashed", color = "grey40") +
+  geom_errorbarh(
+    aes(xmin = OR_lower, xmax = OR_upper),
+    height = 0.2
+  ) +
+  geom_point(size = 3, shape = 21, color = "grey") +
+  scale_fill_manual(
+    values = c("***" = "#177B5D", "**" = "#66c2a5", "*" = "#7CEAC7", "ns" = "white")
+  ) +
+  scale_x_log10(
+    breaks = c(0.25, 0.5, 1, 2, 4, 8),
+    labels = c("4× moins", "2× moins", "pas d'effet", "2× plus", "4× plus", "8× plus")
+  ) +
+  labs(
+    x = "Chances d’être classé dans une catégorie d’avis plus élevée",
+    y = "",
+    color = "Significativité",
+    title = "Effets des variables explicatives sur l’avis (odds ratios)"
+  ) +
+  theme_minimal(base_size = 13) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+```
+
+### tendances_stoc
+
+```{r}
+#| echo: false
+
+# modele_full <- polr(
+#    avis_niv1 ~ tendance_shoc_niv1 +
+#      +  +  +  +  +  + 
+#      +  +
+#      + 
+#     , 
+#   data = dt1,
+#   Hess = TRUE
+# )
+
+# model ------------------------------------------------------------------------
+
+modele_tendances_stoc <- polr(
+   avis_niv1 ~ tendance_shoc_niv1*tendances_stoc,
+    data = dt1,
+  Hess = TRUE
+)
+
+modele_tendances_stoc <- stepAIC(
+  modele_tendances_stoc,
+  direction = "both",
+  trace = FALSE
+)
+
+# p-value ----------------------------------------------------------------------
+
+ctable_tendances_stoc <- coef(summary(modele_tendances_stoc))
+p_values_tendances_stoc <- pnorm(abs(ctable_tendances_stoc[, "t value"]), lower.tail = FALSE) * 2
+cbind(ctable_tendances_stoc, "p value" = p_values_tendances_stoc)
+
+# plot -------------------------------------------------------------------------
+
+ctable_tendances_stoc <- as.data.frame(ctable_tendances_stoc)
+
+res_tendances_stoc <- as.data.frame(ctable_tendances_stoc) %>%
+  mutate(
+    variable = rownames(ctable_tendances_stoc),
+    p_value = p_values_tendances_stoc,
+    signif = case_when(
+      p_value < 0.001 ~ "***", 
+      p_value < 0.01  ~ "**",
+      p_value < 0.05  ~ "*",
+      TRUE            ~ "ns"
+    ),
+    lower = Value - 1.96 * ctable_tendances_stoc$`Std. Error`,
+    upper = Value + 1.96 * ctable_tendances_stoc$`Std. Error`
+  )
+
+res_plot_tendances_stoc <- res_tendances_stoc %>%
+  filter(!grepl("\\|", variable))
+
+res_plot_tendances_stoc$variable <- factor(
+  res_plot_tendances_stoc$variable,
+  levels = res_plot_tendances_stoc$variable[order(res_plot_tendances_stoc$Value)]
+)
+
+# OR, échelle interprétable 
+# Un odds ratio (OR) se lit comme :
+# « multiplicateur des chances d’être classé dans une catégorie d’avis plus élevée plutôt qu’une catégorie plus basse »
+
+res_plot_tendances_stoc <- res_plot_tendances_stoc %>%
+  mutate(
+    OR = exp(Value),
+    OR_lower = exp(lower),
+    OR_upper = exp(upper)
+  )
+
+# nom des variables :
+res_plot_tendances_stoc$variable <- fct_recode(res_plot_tendances_stoc$variable,
+                                "SHOC - Quadratique" = "tendance_shoc_niv1.Q",
+                                "SHOC - Linéaire" = "tendance_shoc_niv1.L")
+                                
+# plot 
+ggplot(res_plot_tendances_stoc, aes(x = OR, y = variable, fill = signif)) +
+  geom_vline(xintercept = 1, linetype = "dashed", color = "grey40") +
+  geom_errorbarh(
+    aes(xmin = OR_lower, xmax = OR_upper),
+    height = 0.2
+  ) +
+  geom_point(size = 3, shape = 21, color = "grey") +
+  scale_fill_manual(
+    values = c("***" = "#177B5D", "**" = "#66c2a5", "*" = "#7CEAC7", "ns" = "white")
+  ) +
+  scale_x_log10(
+    breaks = c(0.25, 0.5, 1, 2, 4, 8),
+    labels = c("4× moins", "2× moins", "pas d'effet", "2× plus", "4× plus", "8× plus")
+  ) +
+  labs(
+    x = "Chances d’être classé dans une catégorie d’avis plus élevée",
+    y = "",
+    color = "Significativité",
+    title = "Effets des variables explicatives sur l’avis (odds ratios)"
+  ) +
+  theme_minimal(base_size = 13) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+```
+
+### all_espece
+
+```{r}
+#| echo: false
+
+# modele_full <- polr(
+#    avis_niv1 ~ tendance_shoc_niv1 +
+#      + regime + detectabilite + gregaire + popularite + abondance_log + #migrateur_simplifie
+#     sexe + anciennete +
+#     expert + # participation_stoc + participation_shoc + participation_epoc + cocheur + bagueur +
+#     tendances_stoc, # + tendance_shoc + tendances_stoc_simplifie,
+#   data = dt1,
+#   Hess = TRUE
+# )
+
+# model ------------------------------------------------------------------------
+
+modele_all_espece <- polr(
+   avis_niv1 ~ tendance_shoc_niv1 + 
+     # migrateur + regime +
+     detectabilite + gregaire + popularite + abondance_log +  
+     # tendance_shoc_niv1:migrateur +
+     # tendance_shoc_niv1:regime +
+     tendance_shoc_niv1:detectabilite +
+     tendance_shoc_niv1:gregaire +
+     tendance_shoc_niv1:popularite +
+     tendance_shoc_niv1:abondance_log, # +
+     # tendance_shoc_niv1:tendances_stoc,
+    data = dt1,
+  Hess = TRUE
+)
+
+modele_all_espece <- stepAIC(
+  modele_all_espece,
+  direction = "both",
+  trace = FALSE
+)
+
+# p-value ----------------------------------------------------------------------
+
+ctable_all_espece <- coef(summary(modele_all_espece))
+p_values_all_espece <- pnorm(abs(ctable_all_espece[, "t value"]), lower.tail = FALSE) * 2
+cbind(ctable_all_espece, "p value" = p_values_all_espece)
+
+# plot -------------------------------------------------------------------------
+
+ctable_all_espece <- as.data.frame(ctable_all_espece)
+
+res_all_espece <- as.data.frame(ctable_all_espece) %>%
+  mutate(
+    variable = rownames(ctable_all_espece),
+    p_value = p_values_all_espece,
+    signif = case_when(
+      p_value < 0.001 ~ "***", 
+      p_value < 0.01  ~ "**",
+      p_value < 0.05  ~ "*",
+      TRUE            ~ "ns"
+    ),
+    lower = Value - 1.96 * ctable_all_espece$`Std. Error`,
+    upper = Value + 1.96 * ctable_all_espece$`Std. Error`
+  )
+
+res_plot_all_espece <- res_all_espece %>%
+  filter(!grepl("\\|", variable))
+
+res_plot_all_espece$variable <- factor(
+  res_plot_all_espece$variable,
+  levels = res_plot_all_espece$variable[order(res_plot_all_espece$Value)]
+)
+
+# OR, échelle interprétable 
+# Un odds ratio (OR) se lit comme :
+# « multiplicateur des chances d’être classé dans une catégorie d’avis plus élevée plutôt qu’une catégorie plus basse »
+
+res_plot_all_espece <- res_plot_all_espece %>%
+  mutate(
+    OR = exp(Value),
+    OR_lower = exp(lower),
+    OR_upper = exp(upper)
+  )
+
+# nom des variables :
+unique(res_plot_all_espece$variable)
+res_plot_all_espece$variable <- fct_recode(res_plot_all_espece$variable,
+                                "Detectabilite (Forte)" = "detectabiliteForte",
+                                "Gregaire (Oui)" = "gregaireOui",
+                                "Popularite (Oui)" = "populariteOui",
+                                "Abondance" = "abondance_log",
+                                "SHOC - Linéaire : Detectabilite (Forte)" = "tendance_shoc_niv1.L:detectabiliteForte",
+                                "SHOC - Linéaire" = "tendance_shoc_niv1.L",
+                                "SHOC - Linéaire : Detectabilite (Forte)" = "tendance_shoc_niv1.L:detectabiliteForte",
+                                "SHOC - Linéaire : Gregaire (Oui)" = "tendance_shoc_niv1.L:gregaireOui",
+                                "SHOC - Linéaire : Abondance" = "tendance_shoc_niv1.L:abondance_log",
+                                "SHOC - Linéaire : Popularité (Oui)" = "tendance_shoc_niv1.L:populariteOui",
+                                "SHOC - Quadratique" = "tendance_shoc_niv1.Q",
+                                "SHOC - Quadratique : Detectabilite (Forte)" = "tendance_shoc_niv1.Q:detectabiliteForte",
+                                "SHOC - Quadratique : Gregaire (Oui)" = "tendance_shoc_niv1.Q:gregaireOui",
+                                "SHOC - Quadratique : Abondance" = "tendance_shoc_niv1.Q:abondance_log",
+                                "SHOC - Quadratique : Popularité (Oui)" = "tendance_shoc_niv1.Q:populariteOui")
+
+# plot 
+ggplot(res_plot_all_espece, aes(x = OR, y = variable, fill = signif)) +
+  geom_vline(xintercept = 1, linetype = "dashed", color = "grey40") +
+  geom_errorbarh(
+    aes(xmin = OR_lower, xmax = OR_upper),
+    height = 0.2
+  ) +
+  geom_point(size = 3, shape = 21, color = "grey") +
+  scale_fill_manual(
+    values = c("***" = "#177B5D", "**" = "#66c2a5", "*" = "#7CEAC7", "ns" = "white")
+  ) +
+  scale_x_log10(
+    breaks = c(0.015625, 0.03125, 0.0625, 0.125, 0.25, 0.5, 1, 2, 4, 8),
+    labels = c("64X mois", "32X mois", "16X mois", "8X mois", "4× moins", "2× moins", "pas d'effet", "2× plus", "4× plus", "8× plus")
+  ) +
+  labs(
+    x = "Chances d’être classé dans une catégorie d’avis plus élevée",
+    y = "",
+    color = "Significativité",
+    title = ""
+  ) +
+  theme_minimal(base_size = 13) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+```
+
+### all_participant
+
+```{r}
+#| echo: false
+
+# modele_full <- polr(
+#    avis_niv1 ~ tendance_shoc_niv1 +
+#      + regime + detectabilite + gregaire + popularite + abondance_log + #migrateur_simplifie
+#     sexe + anciennete +
+#     expert + # participation_stoc + participation_shoc + participation_epoc + cocheur + bagueur +
+#     tendances_stoc, # + tendance_shoc + tendances_stoc_simplifie,
+#   data = dt1,
+#   Hess = TRUE
+# )
+
+# model ------------------------------------------------------------------------
+
+modele_all_participant <- polr(
+   avis_niv1 ~ tendance_shoc_niv1 + 
+     sexe + anciennete + expert + 
+     tendance_shoc_niv1:sexe +
+     tendance_shoc_niv1:anciennete +
+     tendance_shoc_niv1:expert, 
+    data = dt1,
+  Hess = TRUE
+)
+
+modele_all_participant <- stepAIC(
+  modele_all_participant,
+  direction = "both",
+  trace = FALSE
+)
+
+# p-value ----------------------------------------------------------------------
+
+ctable_all_participant <- coef(summary(modele_all_participant))
+p_values_all_participant <- pnorm(abs(ctable_all_participant[, "t value"]), lower.tail = FALSE) * 2
+cbind(ctable_all_participant, "p value" = p_values_all_participant)
+
+# plot -------------------------------------------------------------------------
+
+ctable_all_participant <- as.data.frame(ctable_all_participant)
+
+res_all_participant <- as.data.frame(ctable_all_participant) %>%
+  mutate(
+    variable = rownames(ctable_all_participant),
+    p_value = p_values_all_participant,
+    signif = case_when(
+      p_value < 0.001 ~ "***", 
+      p_value < 0.01  ~ "**",
+      p_value < 0.05  ~ "*",
+      TRUE            ~ "ns"
+    ),
+    lower = Value - 1.96 * ctable_all_participant$`Std. Error`,
+    upper = Value + 1.96 * ctable_all_participant$`Std. Error`
+  )
+
+res_plot_all_participant <- res_all_participant %>%
+  filter(!grepl("\\|", variable))
+
+res_plot_all_participant$variable <- factor(
+  res_plot_all_participant$variable,
+  levels = res_plot_all_participant$variable[order(res_plot_all_participant$Value)]
+)
+
+# OR, échelle interprétable 
+# Un odds ratio (OR) se lit comme :
+# « multiplicateur des chances d’être classé dans une catégorie d’avis plus élevée plutôt qu’une catégorie plus basse »
+
+res_plot_all_participant <- res_plot_all_participant %>%
+  mutate(
+    OR = exp(Value),
+    OR_lower = exp(lower),
+    OR_upper = exp(upper)
+  )
+
+# nom des variables :
+unique(res_plot_all_participant$variable)
+res_plot_all_participant$variable <- fct_recode(res_plot_all_participant$variable,
+                                "Sexe (H)" = "sexeH",
+                                "Anciennete" = "anciennete",
+                                "Expert (Oui)" = "expert",
+                                "STOC (Déclin modéré)" = "tendances_stocDéclin modéré",
+                                "SHOC - Linéaire" = "tendance_shoc_niv1.L",
+                                "SHOC - Linéaire : Sexe (H)" = "tendance_shoc_niv1.L:sexeH",
+                                "SHOC - Linéaire : Ancienneté" = "tendance_shoc_niv1.L:anciennete",
+                                "SHOC - Quadratique" = "tendance_shoc_niv1.Q",
+                                "SHOC - Quadratique : Sexe (H)" = "tendance_shoc_niv1.Q:sexeH",
+                                "SHOC - Quadratique : Ancienneté" = "tendance_shoc_niv1.Q:anciennete")
+
+# plot 
+ggplot(res_plot_all_participant, aes(x = OR, y = variable, fill = signif)) +
+  geom_vline(xintercept = 1, linetype = "dashed", color = "grey40") +
+  geom_errorbarh(
+    aes(xmin = OR_lower, xmax = OR_upper),
+    height = 0.2
+  ) +
+  geom_point(size = 3, shape = 21, color = "grey") +
+  scale_fill_manual(
+    values = c("***" = "#177B5D", "**" = "#66c2a5", "*" = "#7CEAC7", "ns" = "white")
+  ) +
+  scale_x_log10(
+    breaks = c(0.015625, 0.03125, 0.0625, 0.125, 0.25, 0.5, 1, 2, 4, 8),
+    labels = c("64X mois", "32X mois", "16X mois", "8X mois", "4× moins", "2× moins", "pas d'effet", "2× plus", "4× plus", "8× plus")
+  ) +
+  labs(
+    x = "Chances d’être classé dans une catégorie d’avis plus élevée",
+    y = "",
+    color = "Significativité",
+    title = ""
+  ) +
+  theme_minimal(base_size = 13) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+```
+
+### all_1
+
+```{r}
+#| echo: false
+
+# modele_full <- polr(
+#    avis_niv1 ~ tendance_shoc_niv1 +
+#      + regime + detectabilite + gregaire + popularite + abondance_log + #migrateur_simplifie
+#     sexe + anciennete +
+#     expert + # participation_stoc + participation_shoc + participation_epoc + cocheur + bagueur +
+#     tendances_stoc, # + tendance_shoc + tendances_stoc_simplifie,
+#   data = dt1,
+#   Hess = TRUE
+# )
+
+# model ------------------------------------------------------------------------
+
+modele_all_1 <- polr(
+   avis_niv1 ~ tendance_shoc_niv1 + 
+     # migrateur + regime +
+     detectabilite + gregaire + popularite + abondance_log + sexe + anciennete + expert + 
+     # tendance_shoc_niv1:migrateur +
+     # tendance_shoc_niv1:regime +
+     tendance_shoc_niv1:detectabilite +
+     tendance_shoc_niv1:gregaire +
+     tendance_shoc_niv1:popularite +
+     tendance_shoc_niv1:abondance_log +
+     tendance_shoc_niv1:sexe +
+     tendance_shoc_niv1:anciennete +
+     # tendance_shoc_niv1:tendances_stoc +
+     tendance_shoc_niv1:expert, 
+    data = dt1,
+  Hess = TRUE
+)
+
+modele_all_1 <- stepAIC(
+  modele_all_1,
+  direction = "both",
+  trace = FALSE
+)
+
+# p-value ----------------------------------------------------------------------
+
+ctable_all_1 <- coef(summary(modele_all_1))
+p_values_all_1 <- pnorm(abs(ctable_all_1[, "t value"]), lower.tail = FALSE) * 2
+cbind(ctable_all_1, "p value" = p_values_all_1)
+
+# plot -------------------------------------------------------------------------
+
+ctable_all_1 <- as.data.frame(ctable_all_1)
+
+res_all_1 <- as.data.frame(ctable_all_1) %>%
+  mutate(
+    variable = rownames(ctable_all_1),
+    p_value = p_values_all_1,
+    signif = case_when(
+      p_value < 0.001 ~ "***", 
+      p_value < 0.01  ~ "**",
+      p_value < 0.05  ~ "*",
+      TRUE            ~ "ns"
+    ),
+    lower = Value - 1.96 * ctable_all_1$`Std. Error`,
+    upper = Value + 1.96 * ctable_all_1$`Std. Error`
+  )
+
+res_plot_all_1 <- res_all_1 %>%
+  filter(!grepl("\\|", variable))
+
+res_plot_all_1$variable <- factor(
+  res_plot_all_1$variable,
+  levels = res_plot_all_1$variable[order(res_plot_all_1$Value)]
+)
+
+# OR, échelle interprétable 
+# Un odds ratio (OR) se lit comme :
+# « multiplicateur des chances d’être classé dans une catégorie d’avis plus élevée plutôt qu’une catégorie plus basse »
+
+res_plot_all_1 <- res_plot_all_1 %>%
+  mutate(
+    OR = exp(Value),
+    OR_lower = exp(lower),
+    OR_upper = exp(upper)
+  )
+
+# nom des variables :
+unique(res_plot_all_1$variable)
+res_plot_all_1$variable <- fct_recode(res_plot_all_1$variable,
+                                "Detectabilite (Forte)" = "detectabiliteForte",
+                                "Gregaire (Oui)" = "gregaireOui",
+                                "Popularite (Oui)" = "populariteOui",
+                                "Abondance" = "abondance_log",
+                                "Sexe (H)" = "sexeH",
+                                "Anciennete" = "anciennete",
+                                "SHOC - Linéaire : Detectabilite (Forte)" = "tendance_shoc_niv1.L:detectabiliteForte",
+                                "SHOC (Déclin) : Détectabilité (Forte)" = "tendance_shoc_niv1Déclin:detectabiliteForte",
+                                "SHOC (Stable) : Détectabilité (Forte)" = "tendance_shoc_niv1Stable:detectabiliteForte ",
+                                "SHOC (Augmentation) : Détectabilité (Forte)" = "tendance_shoc_niv1Augmentation:detectabiliteForte",
+                                "SHOC (Déclin) : Grégaire (Oui)" = "tendance_shoc_niv1Déclin:gregaireOui",
+                                "STOC (Déclin modéré)" = "tendances_stocDéclin modéré",
+                                "SHOC (Stable) : Détectabilité (Forte)" = "tendance_shoc_niv1Stable:detectabiliteOui",
+                                "SHOC (Stable) : Grégaire (Oui)" = "tendance_shoc_niv1Stable:gregaireOui",
+                                "SHOC (Augmentation) : Grégaire (Oui)" = "tendance_shoc_niv1Augmentation:gregaireOui",
+                                "SHOC - Linéaire" = "tendance_shoc_niv1.L",
+                                "SHOC - Linéaire : Detectabilite (Forte)" = "tendance_shoc_niv1.L:detectabiliteForte",
+                                "SHOC - Linéaire : Gregaire (Oui)" = "tendance_shoc_niv1.L:gregaireOui",
+                                "SHOC - Linéaire : Abondance" = "tendance_shoc_niv1.L:abondance_log",
+                                "SHOC - Linéaire : Popularité (Oui)" = "tendance_shoc_niv1.L:populariteOui",
+                                "SHOC - Linéaire : Sexe (H)" = "tendance_shoc_niv1.L:sexeH",
+                                "SHOC - Linéaire : Ancienneté" = "tendance_shoc_niv1.L:anciennete",
+                                "SHOC - Quadratique" = "tendance_shoc_niv1.Q",
+                                "SHOC - Quadratique : Detectabilite (Forte)" = "tendance_shoc_niv1.Q:detectabiliteForte",
+                                "SHOC - Quadratique : Gregaire (Oui)" = "tendance_shoc_niv1.Q:gregaireOui",
+                                "SHOC - Quadratique : Abondance" = "tendance_shoc_niv1.Q:abondance_log",
+                                "SHOC - Quadratique : Popularité (Oui)" = "tendance_shoc_niv1.Q:populariteOui",
+                                "SHOC - Quadratique : Sexe (H)" = "tendance_shoc_niv1.Q:sexeH",
+                                "SHOC - Quadratique : Ancienneté" = "tendance_shoc_niv1.Q:anciennete")
+
+# plot 
+ggplot(res_plot_all_1, aes(x = OR, y = variable, fill = signif)) +
+  geom_vline(xintercept = 1, linetype = "dashed", color = "grey40") +
+  geom_errorbarh(
+    aes(xmin = OR_lower, xmax = OR_upper),
+    height = 0.2
+  ) +
+  geom_point(size = 3, shape = 21, color = "grey") +
+  scale_fill_manual(
+    values = c("***" = "#177B5D", "**" = "#66c2a5", "*" = "#7CEAC7", "ns" = "white")
+  ) +
+  scale_x_log10(
+    breaks = c(0.015625, 0.03125, 0.0625, 0.125, 0.25, 0.5, 1, 2, 4, 8),
+    labels = c("64X mois", "32X mois", "16X mois", "8X mois", "4× moins", "2× moins", "pas d'effet", "2× plus", "4× plus", "8× plus")
+  ) +
+  labs(
+    x = "Chances d’être classé dans une catégorie d’avis plus élevée",
+    y = "",
+    color = "Significativité",
+    title = ""
+  ) +
+  theme_minimal(base_size = 13) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 ```
 
 # matrice de corrélation
