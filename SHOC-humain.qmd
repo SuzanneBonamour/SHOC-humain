@@ -1157,7 +1157,7 @@ m_n1_trait_participant_allint_5 <- clmm(avis_niv1 ~ tendance_shoc_niv1 +
 #| echo: false
 AIC_dt_all_n1 <- as.data.frame(AIC(m_n1_base,
                                    m_n1_trait_1, m_n1_trait_2, m_n1_trait_3, m_n1_trait_4, m_n1_trait_5, m_n1_trait_6,
-                                   m_n1_trait_1int, m_n1_trait_2int, m_n1_trait_3int, m_n1_trait_4int, m_n1_trait_5int, m_n1_trait_int,
+                                   m_n1_trait_1int, m_n1_trait_2int, m_n1_trait_3int, m_n1_trait_4int, m_n1_trait_5int, m_n1_trait_6int,
                                    m_n1_trait_all, m_n1_trait_allint, 
                                    m_n1_participant_1, m_n1_participant_2, m_n1_participant_3,
                                    m_n1_participant_1int, m_n1_participant_2int, m_n1_participant_3int,
@@ -3489,20 +3489,20 @@ Selection des effets aléatoires : email, espece, departement, region, bioregion
 #| message: false
 #| warning: false
 #| include: false
-m_niv10.1 <- glmer(comparaison_niv1 ~ 1 + (1 | email), data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
-m_niv10.2 <- glmer(comparaison_niv1 ~ 1 + (1 | espece), data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
-m_niv10.3 <- glmer(comparaison_niv1 ~ 1 + (1 | departement), data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
-m_niv10.4 <- glmer(comparaison_niv1 ~ 1 + (1 | region), data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
-m_niv10.5 <- glmer(comparaison_niv1 ~ 1 + (1 | bioregion), data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
+m_n10.1 <- glmer(comparaison_niv1 ~ 1 + (1 | email), data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
+m_n10.2 <- glmer(comparaison_niv1 ~ 1 + (1 | espece), data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
+m_n10.3 <- glmer(comparaison_niv1 ~ 1 + (1 | departement), data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
+m_n10.4 <- glmer(comparaison_niv1 ~ 1 + (1 | region), data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
+m_n10.5 <- glmer(comparaison_niv1 ~ 1 + (1 | bioregion), data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
 ```
 
 ```{r}
 #| echo: false
 #| message: false
 #| warning: false
-niv1_random_comp1 <- compare_performance(m_niv10.1, m_niv10.2, m_niv10.3, m_niv10.4, m_niv10.5) ; niv1_random_comp1
-print("m_niv10.2")
-summary(m_niv10.2)
+niv1_random_comp1 <- compare_performance(m_n10.1, m_n10.2, m_n10.3, m_n10.4, m_n10.5) ; niv1_random_comp1
+print("m_n10.2")
+summary(m_n10.2)
 ```
 
 ```{r}
@@ -3510,13 +3510,13 @@ summary(m_niv10.2)
 #| message: false
 #| warning: false
 #| include: false
-m_niv10.21 <- glmer(comparaison_niv1 ~ 1 + (1 | espece) + (1 | email), 
+m_n10.21 <- glmer(comparaison_niv1 ~ 1 + (1 | espece) + (1 | email), 
                     data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
-m_niv10.22 <- glmer(comparaison_niv1 ~ 1 + (1 | espece) + (1 | departement), 
+m_n10.22 <- glmer(comparaison_niv1 ~ 1 + (1 | espece) + (1 | departement), 
                     data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
-m_niv10.23 <- glmer(comparaison_niv1 ~ 1 + (1 | espece) + (1 | region), 
+m_n10.23 <- glmer(comparaison_niv1 ~ 1 + (1 | espece) + (1 | region), 
                     data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
-m_niv10.24 <- glmer(comparaison_niv1 ~ 1 + (1 | espece) + (1 | bioregion), 
+m_n10.24 <- glmer(comparaison_niv1 ~ 1 + (1 | espece) + (1 | bioregion), 
                     data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
 ```
 
@@ -3524,9 +3524,9 @@ m_niv10.24 <- glmer(comparaison_niv1 ~ 1 + (1 | espece) + (1 | bioregion),
 #| echo: false
 #| message: false
 #| warning: false
-niv1_random_comp2 <- compare_performance(m_niv10.2, m_niv10.21, m_niv10.22, m_niv10.23, m_niv10.24) ; niv1_random_comp2
-print("m_niv10.23")
-summary(m_niv10.23)
+niv1_random_comp2 <- compare_performance(m_n10.2, m_n10.21, m_n10.22, m_n10.23, m_n10.24) ; niv1_random_comp2
+print("m_n10.23")
+summary(m_n10.23)
 ```
 
 ```{r}
@@ -3534,11 +3534,11 @@ summary(m_niv10.23)
 #| message: false
 #| warning: false
 #| include: false
-m_niv10.231 <- glmer(comparaison_niv1 ~ 1 + (1 | espece) + (1 | region) + (1 | email), 
+m_n10.231 <- glmer(comparaison_niv1 ~ 1 + (1 | espece) + (1 | region) + (1 | email), 
                      data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
-m_niv10.232 <- glmer(comparaison_niv1 ~ 1 + (1 | espece) + (1 | region) + (1 | departement), 
+m_n10.232 <- glmer(comparaison_niv1 ~ 1 + (1 | espece) + (1 | region) + (1 | departement), 
                 data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
-m_niv10.233 <- glmer(comparaison_niv1 ~ 1 + (1 | espece) + (1 | region) + (1 | bioregion), 
+m_n10.233 <- glmer(comparaison_niv1 ~ 1 + (1 | espece) + (1 | region) + (1 | bioregion), 
                 data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
 ```
 
@@ -3546,7 +3546,7 @@ m_niv10.233 <- glmer(comparaison_niv1 ~ 1 + (1 | espece) + (1 | region) + (1 | b
 #| echo: false
 #| message: false
 #| warning: false
-niv1_random_comp3 <- compare_performance(m_niv10.23, m_niv10.231, m_niv10.232, m_niv10.233) ; niv1_random_comp3
+niv1_random_comp3 <- compare_performance(m_n10.23, m_n10.231, m_n10.232, m_n10.233) ; niv1_random_comp3
 ```
 
 ### effets fixes
@@ -3562,52 +3562,52 @@ Variables liées à la biologies des espèces : tendances_stoc, tendances_stoc_s
 #| message: false
 #| warning: false
 #| include: false
-m_niv1.espece.0 <- glmer(comparaison_niv1 ~ 1 + 
+m_n1.espece.0 <- glmer(comparaison_niv1 ~ 1 + 
                            (1 | espece) + (1 | region), 
                     data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
-m_niv1.espece.1 <- glmer(comparaison_niv1 ~ tendances_stoc 
+m_n1.espece.1 <- glmer(comparaison_niv1 ~ tendances_stoc 
                          + (1 | espece) + (1 | region), 
                     data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
-m_niv1.espece.2 <- glmer(comparaison_niv1 ~ tendances_stoc_simplifie +
+m_n1.espece.2 <- glmer(comparaison_niv1 ~ tendances_stoc_simplifie +
                            (1 | espece) + (1 | region), 
                     data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
-m_niv1.espece.3 <- glmer(comparaison_niv1 ~ tendances_stoc_simplifie_2 + 
+m_n1.espece.3 <- glmer(comparaison_niv1 ~ tendances_stoc_simplifie_2 + 
                            (1 | espece) + (1 | region), 
                     data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
-m_niv1.espece.4 <- glmer(comparaison_niv1 ~ detectabilite + 
+m_n1.espece.4 <- glmer(comparaison_niv1 ~ detectabilite + 
                            (1 | espece) + (1 | region), 
                     data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
-m_niv1.espece.5 <- glmer(comparaison_niv1 ~ gregaire + 
+m_n1.espece.5 <- glmer(comparaison_niv1 ~ gregaire + 
                            (1 | espece) + (1 | region), 
                     data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
-m_niv1.espece.6 <- glmer(comparaison_niv1 ~ fluctuante + 
+m_n1.espece.6 <- glmer(comparaison_niv1 ~ fluctuante + 
                            (1 | espece) + (1 | region), 
                     data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
-m_niv1.espece.7 <- glmer(comparaison_niv1 ~ migrateur + 
+m_n1.espece.7 <- glmer(comparaison_niv1 ~ migrateur + 
                            (1 | espece) + (1 | region), 
                     data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
-m_niv1.espece.8 <- glmer(comparaison_niv1 ~ migrateur_simplifie + 
+m_n1.espece.8 <- glmer(comparaison_niv1 ~ migrateur_simplifie + 
                            (1 | espece) + (1 | region), 
                     data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
-m_niv1.espece.9 <- glmer(comparaison_niv1 ~ regime + 
+m_n1.espece.9 <- glmer(comparaison_niv1 ~ regime + 
                            (1 | espece) + (1 | region), 
                     data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
-m_niv1.espece.10 <- glmer(comparaison_niv1 ~ popularite + 
+m_n1.espece.10 <- glmer(comparaison_niv1 ~ popularite + 
                             (1 | espece) + (1 | region), 
                     data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
-m_niv1.espece.11 <- glmer(comparaison_niv1 ~ abondance_log + 
+m_n1.espece.11 <- glmer(comparaison_niv1 ~ abondance_log + 
                             (1 | espece) + (1 | region), 
                     data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
-m_niv1.espece.12 <- glmer(comparaison_niv1 ~ abondance_div + 
+m_n1.espece.12 <- glmer(comparaison_niv1 ~ abondance_div + 
                             (1 | espece) + (1 | region), 
                     data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
-m_niv1.espece.13 <- glmer(comparaison_niv1 ~ espece + 
+m_n1.espece.13 <- glmer(comparaison_niv1 ~ espece + 
                             (1 | espece) + (1 | region), 
                     data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
-m_niv1.espece.14 <- glmer(comparaison_niv1 ~ region + 
+m_n1.espece.14 <- glmer(comparaison_niv1 ~ region + 
                             (1 | espece) + (1 | region), 
                     data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
-m_niv1.espece.15 <- glmer(comparaison_niv1 ~ bioregion + 
+m_n1.espece.15 <- glmer(comparaison_niv1 ~ bioregion + 
                             (1 | espece) + (1 | region), 
                     data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
 ```
@@ -3617,12 +3617,12 @@ m_niv1.espece.15 <- glmer(comparaison_niv1 ~ bioregion +
 #| message: false
 #| warning: false
 #| include: false
-niv1_fixed_comp1 <- compare_performance(m_niv1.espece.0,m_niv1.espece.1,m_niv1.espece.2,m_niv1.espece.3,m_niv1.espece.4,
-                    m_niv1.espece.5,m_niv1.espece.6,m_niv1.espece.7,m_niv1.espece.8,
-                    m_niv1.espece.9,m_niv1.espece.10,m_niv1.espece.11,m_niv1.espece.12,
-                    m_niv1.espece.13,m_niv1.espece.14,m_niv1.espece.15) ; niv1_fixed_comp1
-# print("m_niv1.espece.3")
-# summary(m_niv1.espece.3)
+niv1_fixed_comp1 <- compare_performance(m_n1.espece.0,m_n1.espece.1,m_n1.espece.2,m_n1.espece.3,m_n1.espece.4,
+                    m_n1.espece.5,m_n1.espece.6,m_n1.espece.7,m_n1.espece.8,
+                    m_n1.espece.9,m_n1.espece.10,m_n1.espece.11,m_n1.espece.12,
+                    m_n1.espece.13,m_n1.espece.14,m_n1.espece.15) ; niv1_fixed_comp1
+# print("m_n1.espece.3")
+# summary(m_n1.espece.3)
 ```
 
 ```{r}
@@ -3630,40 +3630,40 @@ niv1_fixed_comp1 <- compare_performance(m_niv1.espece.0,m_niv1.espece.1,m_niv1.e
 #| message: false
 #| warning: false
 #| include: false
-m_niv1.espece.8.1 <- glmer(comparaison_niv1 ~ tendances_stoc_simplifie_2 + tendances_stoc + 
+m_n1.espece.8.1 <- glmer(comparaison_niv1 ~ tendances_stoc_simplifie_2 + tendances_stoc + 
                              (1 | espece) + (1 | region), 
                       data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
-m_niv1.espece.8.2 <- glmer(comparaison_niv1 ~ tendances_stoc_simplifie_2 + tendances_stoc_simplifie + 
+m_n1.espece.8.2 <- glmer(comparaison_niv1 ~ tendances_stoc_simplifie_2 + tendances_stoc_simplifie + 
                              (1 | espece) + (1 | region), 
                       data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
-m_niv1.espece.8.3 <- glmer(comparaison_niv1 ~ tendances_stoc_simplifie_2 + detectabilite + 
+m_n1.espece.8.3 <- glmer(comparaison_niv1 ~ tendances_stoc_simplifie_2 + detectabilite + 
                              (1 | espece) + (1 | region), 
                       data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
-m_niv1.espece.8.4 <- glmer(comparaison_niv1 ~ tendances_stoc_simplifie_2 + gregaire + 
+m_n1.espece.8.4 <- glmer(comparaison_niv1 ~ tendances_stoc_simplifie_2 + gregaire + 
                              (1 | espece) + (1 | region), 
                       data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
-m_niv1.espece.8.5 <- glmer(comparaison_niv1 ~ tendances_stoc_simplifie_2 + fluctuante + 
+m_n1.espece.8.5 <- glmer(comparaison_niv1 ~ tendances_stoc_simplifie_2 + fluctuante + 
                              (1 | espece) + (1 | region), 
                       data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
-m_niv1.espece.8.6 <- glmer(comparaison_niv1 ~ tendances_stoc_simplifie_2 + migrateur + 
+m_n1.espece.8.6 <- glmer(comparaison_niv1 ~ tendances_stoc_simplifie_2 + migrateur + 
                              (1 | espece) + (1 | region), 
                       data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
-m_niv1.espece.8.7 <- glmer(comparaison_niv1 ~ tendances_stoc_simplifie_2 + migrateur_simplifie + 
+m_n1.espece.8.7 <- glmer(comparaison_niv1 ~ tendances_stoc_simplifie_2 + migrateur_simplifie + 
                              (1 | espece) + (1 | region), 
                       data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
-m_niv1.espece.8.8 <- glmer(comparaison_niv1 ~ tendances_stoc_simplifie_2 + abondance_log + 
+m_n1.espece.8.8 <- glmer(comparaison_niv1 ~ tendances_stoc_simplifie_2 + abondance_log + 
                              (1 | espece) + (1 | region), 
                       data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
-m_niv1.espece.8.9 <- glmer(comparaison_niv1 ~ tendances_stoc_simplifie_2 + abondance_div + 
+m_n1.espece.8.9 <- glmer(comparaison_niv1 ~ tendances_stoc_simplifie_2 + abondance_div + 
                              (1 | espece) + (1 | region), 
                       data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
-m_niv1.espece.8.10 <- glmer(comparaison_niv1 ~ tendances_stoc_simplifie_2 + espece + 
+m_n1.espece.8.10 <- glmer(comparaison_niv1 ~ tendances_stoc_simplifie_2 + espece + 
                              (1 | espece) + (1 | region), 
                       data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
-m_niv1.espece.8.11 <- glmer(comparaison_niv1 ~ tendances_stoc_simplifie_2 + region + 
+m_n1.espece.8.11 <- glmer(comparaison_niv1 ~ tendances_stoc_simplifie_2 + region + 
                              (1 | espece) + (1 | region), 
                       data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
-m_niv1.espece.8.12 <- glmer(comparaison_niv1 ~ tendances_stoc_simplifie_2 + bioregion + 
+m_n1.espece.8.12 <- glmer(comparaison_niv1 ~ tendances_stoc_simplifie_2 + bioregion + 
                              (1 | espece) + (1 | region), 
                       data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
 ```
@@ -3673,11 +3673,11 @@ m_niv1.espece.8.12 <- glmer(comparaison_niv1 ~ tendances_stoc_simplifie_2 + bior
 #| message: false
 #| warning: false
 #| include: false
-niv1_fixed_comp2 <- compare_performance(m_niv1.espece.8,m_niv1.espece.8.1,m_niv1.espece.8.2,m_niv1.espece.8.3,m_niv1.espece.8.4,
-                    m_niv1.espece.8.5,m_niv1.espece.8.6,m_niv1.espece.8.7,m_niv1.espece.8.8,
-                    m_niv1.espece.8.9,m_niv1.espece.8.10,m_niv1.espece.8.11,m_niv1.espece.8.12) ; niv1_fixed_comp2
-# print("m_niv1.espece.8.10")
-summary(m_niv1.espece.8.10)
+niv1_fixed_comp2 <- compare_performance(m_n1.espece.8,m_n1.espece.8.1,m_n1.espece.8.2,m_n1.espece.8.3,m_n1.espece.8.4,
+                    m_n1.espece.8.5,m_n1.espece.8.6,m_n1.espece.8.7,m_n1.espece.8.8,
+                    m_n1.espece.8.9,m_n1.espece.8.10,m_n1.espece.8.11,m_n1.espece.8.12) ; niv1_fixed_comp2
+# print("m_n1.espece.8.10")
+summary(m_n1.espece.8.10)
 ```
 
 ```{r}
@@ -3685,25 +3685,25 @@ summary(m_niv1.espece.8.10)
 #| message: false
 #| warning: false
 #| include: false
-m_niv1.espece.8.3.1 <- glmer(comparaison_niv1 ~  tendances_stoc_simplifie_2 + espece + migrateur + 
+m_n1.espece.8.3.1 <- glmer(comparaison_niv1 ~  tendances_stoc_simplifie_2 + espece + migrateur + 
                                (1 | espece) + (1 | region), 
                              data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
-m_niv1.espece.8.3.2 <- glmer(comparaison_niv1 ~  tendances_stoc_simplifie_2 + espece + migrateur_simplifie + 
+m_n1.espece.8.3.2 <- glmer(comparaison_niv1 ~  tendances_stoc_simplifie_2 + espece + migrateur_simplifie + 
                                (1 | espece) + (1 | region), 
                              data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
-m_niv1.espece.8.3.3 <- glmer(comparaison_niv1 ~  tendances_stoc_simplifie_2 + espece + gregaire + 
+m_n1.espece.8.3.3 <- glmer(comparaison_niv1 ~  tendances_stoc_simplifie_2 + espece + gregaire + 
                                (1 | espece) + (1 | region), 
                              data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
-m_niv1.espece.8.3.4 <- glmer(comparaison_niv1 ~  tendances_stoc_simplifie_2 + espece + fluctuante + 
+m_n1.espece.8.3.4 <- glmer(comparaison_niv1 ~  tendances_stoc_simplifie_2 + espece + fluctuante + 
                                (1 | espece) + (1 | region), 
                              data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
-m_niv1.espece.8.3.5 <- glmer(comparaison_niv1 ~  tendances_stoc_simplifie_2 + espece + abondance_log + 
+m_n1.espece.8.3.5 <- glmer(comparaison_niv1 ~  tendances_stoc_simplifie_2 + espece + abondance_log + 
                                (1 | espece) + (1 | region), 
                              data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
-m_niv1.espece.8.3.6 <- glmer(comparaison_niv1 ~  tendances_stoc_simplifie_2 + espece + abondance_div + 
+m_n1.espece.8.3.6 <- glmer(comparaison_niv1 ~  tendances_stoc_simplifie_2 + espece + abondance_div + 
                                (1 | espece) + (1 | region), 
                              data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
-m_niv1.espece.8.3.7 <- glmer(comparaison_niv1 ~  tendances_stoc_simplifie_2 + espece + detectabilite + 
+m_n1.espece.8.3.7 <- glmer(comparaison_niv1 ~  tendances_stoc_simplifie_2 + espece + detectabilite + 
                                (1 | espece) + (1 | region), 
                              data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
 ```
@@ -3713,10 +3713,10 @@ m_niv1.espece.8.3.7 <- glmer(comparaison_niv1 ~  tendances_stoc_simplifie_2 + es
 #| message: false
 #| warning: false
 #| include: false
-niv1_fixed_comp3 <- compare_performance(m_niv1.espece.8.3,m_niv1.espece.8.3.1,m_niv1.espece.8.3.2,m_niv1.espece.8.3.3,
-                                        m_niv1.espece.8.3.4,m_niv1.espece.8.3.5,m_niv1.espece.8.3.6,m_niv1.espece.8.3.7) ; niv1_fixed_comp3
-print("m_niv1.espece.8.3")
-summary(m_niv1.espece.8.3)
+niv1_fixed_comp3 <- compare_performance(m_n1.espece.8.3,m_n1.espece.8.3.1,m_n1.espece.8.3.2,m_n1.espece.8.3.3,
+                                        m_n1.espece.8.3.4,m_n1.espece.8.3.5,m_n1.espece.8.3.6,m_n1.espece.8.3.7) ; niv1_fixed_comp3
+print("m_n1.espece.8.3")
+summary(m_n1.espece.8.3)
 ```
 
 #### participant.es
@@ -3728,28 +3728,28 @@ Variables liées aux caractéristiques des participants : participation_stoc, pa
 #| message: false
 #| warning: false
 #| include: false
-m_niv1.participant.0 <- glmer(comparaison_niv1 ~ 1 + 
+m_n1.participant.0 <- glmer(comparaison_niv1 ~ 1 + 
                                 (1 | espece) + (1 | region), 
                          data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
-m_niv1.participant.1 <- glmer(comparaison_niv1 ~ participation_stoc + 
+m_n1.participant.1 <- glmer(comparaison_niv1 ~ participation_stoc + 
                                 (1 | espece) + (1 | region), 
                          data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
-m_niv1.participant.2 <- glmer(comparaison_niv1 ~ participation_shoc + 
+m_n1.participant.2 <- glmer(comparaison_niv1 ~ participation_shoc + 
                                 (1 | espece) + (1 | region), 
                          data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
-m_niv1.participant.3 <- glmer(comparaison_niv1 ~ participation_epoc + 
+m_n1.participant.3 <- glmer(comparaison_niv1 ~ participation_epoc + 
                                 (1 | espece) + (1 | region), 
                          data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
-m_niv1.participant.4 <- glmer(comparaison_niv1 ~ sexe + 
+m_n1.participant.4 <- glmer(comparaison_niv1 ~ sexe + 
                                 (1 | espece) + (1 | region), 
                          data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
-m_niv1.participant.5 <- glmer(comparaison_niv1 ~ cocheur + 
+m_n1.participant.5 <- glmer(comparaison_niv1 ~ cocheur + 
                                 (1 | espece) + (1 | region), 
                          data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
-m_niv1.participant.6 <- glmer(comparaison_niv1 ~ bagueur + 
+m_n1.participant.6 <- glmer(comparaison_niv1 ~ bagueur + 
                                 (1 | espece) + (1 | region), 
                          data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
-m_niv1.participant.7 <- glmer(comparaison_niv1 ~ expert + 
+m_n1.participant.7 <- glmer(comparaison_niv1 ~ expert + 
                                 (1 | espece) + (1 | region), 
                          data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
 ```
@@ -3759,13 +3759,13 @@ m_niv1.participant.7 <- glmer(comparaison_niv1 ~ expert +
 #| message: false
 #| warning: false
 #| include: false
-niv1_fixed_comp4 <- compare_performance(m_niv1.participant.0,m_niv1.participant.1,m_niv1.participant.2,m_niv1.participant.3,
-                                        m_niv1.participant.4,m_niv1.participant.5,
-                                        m_niv1.participant.6,m_niv1.participant.7) ; niv1_fixed_comp4
-AIC(m_niv1.participant.0,m_niv1.participant.1,m_niv1.participant.2,m_niv1.participant.3,m_niv1.participant.4,
-    m_niv1.participant.5,m_niv1.participant.6,m_niv1.participant.7)
-# print("m_niv1.participant.4")
-# summary(m_niv1.participant.4)
+niv1_fixed_comp4 <- compare_performance(m_n1.participant.0,m_n1.participant.1,m_n1.participant.2,m_n1.participant.3,
+                                        m_n1.participant.4,m_n1.participant.5,
+                                        m_n1.participant.6,m_n1.participant.7) ; niv1_fixed_comp4
+AIC(m_n1.participant.0,m_n1.participant.1,m_n1.participant.2,m_n1.participant.3,m_n1.participant.4,
+    m_n1.participant.5,m_n1.participant.6,m_n1.participant.7)
+# print("m_n1.participant.4")
+# summary(m_n1.participant.4)
 ```
 
 ```{r}
@@ -3773,65 +3773,23 @@ AIC(m_niv1.participant.0,m_niv1.participant.1,m_niv1.participant.2,m_niv1.partic
 #| message: false
 #| warning: false
 #| include: false
-m_niv1.participant.4.1 <- glmer(comparaison_niv1 ~ sexe + participation_stoc + 
+m_n1.participant.4.1 <- glmer(comparaison_niv1 ~ sexe + participation_stoc + 
                                   (1 | espece) + (1 | region), 
                          data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
-m_niv1.participant.4.2 <- glmer(comparaison_niv1 ~ sexe + participation_shoc + 
+m_n1.participant.4.2 <- glmer(comparaison_niv1 ~ sexe + participation_shoc + 
                                   (1 | espece) + (1 | region), 
                          data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
-m_niv1.participant.4.3 <- glmer(comparaison_niv1 ~ sexe + participation_epoc + 
+m_n1.participant.4.3 <- glmer(comparaison_niv1 ~ sexe + participation_epoc + 
                                   (1 | espece) + (1 | region), 
                          data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
-m_niv1.participant.4.4 <- glmer(comparaison_niv1 ~ sexe + cocheur + 
+m_n1.participant.4.4 <- glmer(comparaison_niv1 ~ sexe + cocheur + 
                                   (1 | espece) + (1 | region), 
                          data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
-m_niv1.participant.4.5 <- glmer(comparaison_niv1 ~ sexe + bagueur + 
+m_n1.participant.4.5 <- glmer(comparaison_niv1 ~ sexe + bagueur + 
                                   (1 | espece) + (1 | region), 
                          data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
-m_niv1.participant.4.6 <- glmer(comparaison_niv1 ~ sexe + expert + 
+m_n1.participant.4.6 <- glmer(comparaison_niv1 ~ sexe + expert + 
                                   (1 | espece) + (1 | region), 
-                         data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
-```
-
-```{r}
-#| eval: false
-#| message: false
-#| warning: false
-#| include: false
-niv1_fixed_comp5 <- compare_performance(m_niv1.participant.4,m_niv1.participant.4.1,m_niv1.participant.4.2,
-                                        m_niv1.participant.4.3,m_niv1.participant.4.4,m_niv1.participant.4.5,m_niv1.participant.4.6) ; niv1_fixed_comp5
-AIC(m_niv1.participant.4,m_niv1.participant.4.1,m_niv1.participant.4.2,m_niv1.participant.4.3,m_niv1.participant.4.4,
-    m_niv1.participant.4.5,m_niv1.participant.4.6)
-# print("m_niv1.participant.4.2")
-# summary(m_niv1.participant.4.2)
-```
-
-```{r}
-#| eval: false
-#| message: false
-#| warning: false
-#| include: false
-
-m_niv1.participant.4.22 <- glmer(comparaison_niv1 ~ sexe*participation_shoc + 
-                                   (1 | espece) + (1 | region), 
-                         data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
-m_niv1.participant.4.44 <- glmer(comparaison_niv1 ~ sexe*cocheur + 
-                                   (1 | espece) + (1 | region), 
-                         data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
-m_niv1.participant.4.24 <- glmer(comparaison_niv1 ~ sexe + participation_shoc + cocheur + 
-                                   (1 | espece) + (1 | region), 
-                         data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
-m_niv1.participant.4.241 <- glmer(comparaison_niv1 ~ sexe*participation_shoc + cocheur + 
-                                   (1 | espece) + (1 | region), 
-                         data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
-m_niv1.participant.4.242 <- glmer(comparaison_niv1 ~ sexe + participation_shoc*cocheur + 
-                                   (1 | espece) + (1 | region), 
-                         data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
-m_niv1.participant.4.243 <- glmer(comparaison_niv1 ~ sexe*cocheur + participation_shoc + 
-                                   (1 | espece) + (1 | region), 
-                         data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
-m_niv1.participant.4.244 <- glmer(comparaison_niv1 ~ sexe*cocheur*participation_shoc + 
-                                   (1 | espece) + (1 | region), 
                          data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
 ```
 
@@ -3840,19 +3798,61 @@ m_niv1.participant.4.244 <- glmer(comparaison_niv1 ~ sexe*cocheur*participation_
 #| message: false
 #| warning: false
 #| include: false
+niv1_fixed_comp5 <- compare_performance(m_n1.participant.4,m_n1.participant.4.1,m_n1.participant.4.2,
+                                        m_n1.participant.4.3,m_n1.participant.4.4,m_n1.participant.4.5,m_n1.participant.4.6) ; niv1_fixed_comp5
+AIC(m_n1.participant.4,m_n1.participant.4.1,m_n1.participant.4.2,m_n1.participant.4.3,m_n1.participant.4.4,
+    m_n1.participant.4.5,m_n1.participant.4.6)
+# print("m_n1.participant.4.2")
+# summary(m_n1.participant.4.2)
+```
 
-niv1_fixed_comp6 <- compare_performance(m_niv1.participant.4.2,m_niv1.participant.4.22,
-                                        m_niv1.participant.4.4,m_niv1.participant.4.44,
-                                        m_niv1.participant.4.24,
-                                        m_niv1.participant.4.241,m_niv1.participant.4.242,
-                                        m_niv1.participant.4.243,m_niv1.participant.4.244) ; niv1_fixed_comp6
-AIC(m_niv1.participant.4.2,m_niv1.participant.4.22,
-                                        m_niv1.participant.4.4,m_niv1.participant.4.44,
-                                        m_niv1.participant.4.24,
-                                        m_niv1.participant.4.241,m_niv1.participant.4.242,
-                                        m_niv1.participant.4.243,m_niv1.participant.4.244)
-# print("m_niv1.participant.4.24")
-# summary(m_niv1.participant.4.24)
+```{r}
+#| eval: false
+#| message: false
+#| warning: false
+#| include: false
+
+m_n1.participant.4.22 <- glmer(comparaison_niv1 ~ sexe*participation_shoc + 
+                                   (1 | espece) + (1 | region), 
+                         data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
+m_n1.participant.4.44 <- glmer(comparaison_niv1 ~ sexe*cocheur + 
+                                   (1 | espece) + (1 | region), 
+                         data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
+m_n1.participant.4.24 <- glmer(comparaison_niv1 ~ sexe + participation_shoc + cocheur + 
+                                   (1 | espece) + (1 | region), 
+                         data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
+m_n1.participant.4.241 <- glmer(comparaison_niv1 ~ sexe*participation_shoc + cocheur + 
+                                   (1 | espece) + (1 | region), 
+                         data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
+m_n1.participant.4.242 <- glmer(comparaison_niv1 ~ sexe + participation_shoc*cocheur + 
+                                   (1 | espece) + (1 | region), 
+                         data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
+m_n1.participant.4.243 <- glmer(comparaison_niv1 ~ sexe*cocheur + participation_shoc + 
+                                   (1 | espece) + (1 | region), 
+                         data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
+m_n1.participant.4.244 <- glmer(comparaison_niv1 ~ sexe*cocheur*participation_shoc + 
+                                   (1 | espece) + (1 | region), 
+                         data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
+```
+
+```{r}
+#| eval: false
+#| message: false
+#| warning: false
+#| include: false
+
+niv1_fixed_comp6 <- compare_performance(m_n1.participant.4.2,m_n1.participant.4.22,
+                                        m_n1.participant.4.4,m_n1.participant.4.44,
+                                        m_n1.participant.4.24,
+                                        m_n1.participant.4.241,m_n1.participant.4.242,
+                                        m_n1.participant.4.243,m_n1.participant.4.244) ; niv1_fixed_comp6
+AIC(m_n1.participant.4.2,m_n1.participant.4.22,
+                                        m_n1.participant.4.4,m_n1.participant.4.44,
+                                        m_n1.participant.4.24,
+                                        m_n1.participant.4.241,m_n1.participant.4.242,
+                                        m_n1.participant.4.243,m_n1.participant.4.244)
+# print("m_n1.participant.4.24")
+# summary(m_n1.participant.4.24)
 ```
 
 #### espece + participant
@@ -3865,73 +3865,40 @@ Selection des combinaisons de variables liées aux espèces et aux participant.e
 #| warning: false
 #| include: false
  
-m_niv1.espece.participant.1 <- glmer(comparaison_niv1 ~ tendances_stoc_simplifie_2 + detectabilite + sexe + participation_shoc + cocheur + 
+m_n1.espece.participant.1 <- glmer(comparaison_niv1 ~ tendances_stoc_simplifie_2 + detectabilite + sexe + participation_shoc + cocheur + 
                                   (1 | espece) + (1 | region), 
                                 data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
-m_niv1.espece.participant.2 <- glmer(comparaison_niv1 ~ tendances_stoc_simplifie_2 + detectabilite + sexe + participation_shoc + 
+m_n1.espece.participant.2 <- glmer(comparaison_niv1 ~ tendances_stoc_simplifie_2 + detectabilite + sexe + participation_shoc + 
                                   (1 | espece) + (1 | region), 
                                 data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
-m_niv1.espece.participant.3 <- glmer(comparaison_niv1 ~ tendances_stoc_simplifie_2 + detectabilite + sexe +
+m_n1.espece.participant.3 <- glmer(comparaison_niv1 ~ tendances_stoc_simplifie_2 + detectabilite + sexe +
                                   (1 | espece) + (1 | region), 
                                 data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
-m_niv1.espece.participant.4 <- glmer(comparaison_niv1 ~ tendances_stoc_simplifie_2 + detectabilite + 
+m_n1.espece.participant.4 <- glmer(comparaison_niv1 ~ tendances_stoc_simplifie_2 + detectabilite + 
                                   (1 | espece) + (1 | region), 
                                 data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
-m_niv1.espece.participant.5 <- glmer(comparaison_niv1 ~ tendances_stoc_simplifie_2 + sexe + participation_shoc + cocheur +  
+m_n1.espece.participant.5 <- glmer(comparaison_niv1 ~ tendances_stoc_simplifie_2 + sexe + participation_shoc + cocheur +  
                                   (1 | espece) + (1 | region), 
                                 data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
-m_niv1.espece.participant.6 <- glmer(comparaison_niv1 ~ sexe + participation_shoc + cocheur +  
+m_n1.espece.participant.6 <- glmer(comparaison_niv1 ~ sexe + participation_shoc + cocheur +  
                                   (1 | espece) + (1 | region), 
                                 data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
-m_niv1.espece.participant.7 <- glmer(comparaison_niv1 ~ detectabilite + sexe + participation_shoc + cocheur + 
+m_n1.espece.participant.7 <- glmer(comparaison_niv1 ~ detectabilite + sexe + participation_shoc + cocheur + 
                                   (1 | espece) + (1 | region), 
                                 data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
-m_niv1.espece.participant.8 <- glmer(comparaison_niv1 ~ tendances_stoc_simplifie_2 + detectabilite + participation_shoc + cocheur + 
+m_n1.espece.participant.8 <- glmer(comparaison_niv1 ~ tendances_stoc_simplifie_2 + detectabilite + participation_shoc + cocheur + 
                                   (1 | espece) + (1 | region), 
                                 data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
-m_niv1.espece.participant.9 <- glmer(comparaison_niv1 ~ tendances_stoc_simplifie_2 + sexe + 
+m_n1.espece.participant.9 <- glmer(comparaison_niv1 ~ tendances_stoc_simplifie_2 + sexe + 
                                   (1 | espece) + (1 | region), 
                                 data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
-m_niv1.espece.participant.10 <- glmer(comparaison_niv1 ~ tendances_stoc_simplifie_2 + detectabilite + sexe + 
+m_n1.espece.participant.10 <- glmer(comparaison_niv1 ~ tendances_stoc_simplifie_2 + detectabilite + sexe + 
                                   (1 | espece) + (1 | region), 
                                 data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
-m_niv1.espece.participant.11 <- glmer(comparaison_niv1 ~ tendances_stoc_simplifie_2 + sexe + cocheur +  
+m_n1.espece.participant.11 <- glmer(comparaison_niv1 ~ tendances_stoc_simplifie_2 + sexe + cocheur +  
                                   (1 | espece) + (1 | region), 
                                 data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
-m_niv1.espece.participant.12 <- glmer(comparaison_niv1 ~ tendances_stoc_simplifie_2 + cocheur +  
-                                  (1 | espece) + (1 | region), 
-                                data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
-```
-
-```{r}
-#| eval: false
-#| message: false
-#| warning: false
-#| include: false
-niv1_fixed_comp7 <- compare_performance(m_niv1.espece.participant.1,m_niv1.espece.participant.2,
-  m_niv1.espece.participant.3,m_niv1.espece.participant.4,m_niv1.espece.participant.5,
-  m_niv1.espece.participant.6,m_niv1.espece.participant.7,m_niv1.espece.participant.8,
-  m_niv1.espece.participant.9,m_niv1.espece.participant.10,m_niv1.espece.participant.11,m_niv1.espece.participant.12) ; niv1_fixed_comp7
-AIC(m_niv1.espece.participant.1,m_niv1.espece.participant.2,m_niv1.espece.participant.3,m_niv1.espece.participant.4,m_niv1.espece.participant.5)
-# print("m_niv1.espece.participant.5")
-# summary(m_niv1.espece.participant.5)
-```
-
-```{r}
-#| eval: false
-#| message: false
-#| warning: false
-#| include: false
-m_niv1.espece.participant.5.1 <- glmer(comparaison_niv1 ~ tendances_stoc_simplifie_2*participation_shoc + sexe  + cocheur + 
-                                  (1 | espece) + (1 | region), 
-                                data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
-m_niv1.espece.participant.5.2 <- glmer(comparaison_niv1 ~ tendances_stoc_simplifie_2*cocheur + sexe + participation_shoc + 
-                                  (1 | espece) + (1 | region), 
-                                data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
-m_niv1.espece.participant.5.3 <- glmer(comparaison_niv1 ~ tendances_stoc_simplifie_2 + sexe*participation_shoc + cocheur + 
-                                  (1 | espece) + (1 | region), 
-                                data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
-m_niv1.espece.participant.5.4 <- glmer(comparaison_niv1 ~ tendances_stoc_simplifie_2 + sexe*cocheur + participation_shoc + 
+m_n1.espece.participant.12 <- glmer(comparaison_niv1 ~ tendances_stoc_simplifie_2 + cocheur +  
                                   (1 | espece) + (1 | region), 
                                 data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
 ```
@@ -3941,12 +3908,45 @@ m_niv1.espece.participant.5.4 <- glmer(comparaison_niv1 ~ tendances_stoc_simplif
 #| message: false
 #| warning: false
 #| include: false
-niv1_fixed_comp8 <- compare_performance(m_niv1.espece.participant.5,m_niv1.espece.participant.5.1,
-                                        m_niv1.espece.participant.5.2,m_niv1.espece.participant.5.3,m_niv1.espece.participant.5.4) ; niv1_fixed_comp8
-AIC(m_niv1.espece.participant.5,m_niv1.espece.participant.5.1,
-                                        m_niv1.espece.participant.5.2,m_niv1.espece.participant.5.3,m_niv1.espece.participant.5.4)
-# print("m_niv1.espece.participant.5")
-# summary(m_niv1.espece.participant.5)
+niv1_fixed_comp7 <- compare_performance(m_n1.espece.participant.1,m_n1.espece.participant.2,
+  m_n1.espece.participant.3,m_n1.espece.participant.4,m_n1.espece.participant.5,
+  m_n1.espece.participant.6,m_n1.espece.participant.7,m_n1.espece.participant.8,
+  m_n1.espece.participant.9,m_n1.espece.participant.10,m_n1.espece.participant.11,m_n1.espece.participant.12) ; niv1_fixed_comp7
+AIC(m_n1.espece.participant.1,m_n1.espece.participant.2,m_n1.espece.participant.3,m_n1.espece.participant.4,m_n1.espece.participant.5)
+# print("m_n1.espece.participant.5")
+# summary(m_n1.espece.participant.5)
+```
+
+```{r}
+#| eval: false
+#| message: false
+#| warning: false
+#| include: false
+m_n1.espece.participant.5.1 <- glmer(comparaison_niv1 ~ tendances_stoc_simplifie_2*participation_shoc + sexe  + cocheur + 
+                                  (1 | espece) + (1 | region), 
+                                data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
+m_n1.espece.participant.5.2 <- glmer(comparaison_niv1 ~ tendances_stoc_simplifie_2*cocheur + sexe + participation_shoc + 
+                                  (1 | espece) + (1 | region), 
+                                data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
+m_n1.espece.participant.5.3 <- glmer(comparaison_niv1 ~ tendances_stoc_simplifie_2 + sexe*participation_shoc + cocheur + 
+                                  (1 | espece) + (1 | region), 
+                                data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
+m_n1.espece.participant.5.4 <- glmer(comparaison_niv1 ~ tendances_stoc_simplifie_2 + sexe*cocheur + participation_shoc + 
+                                  (1 | espece) + (1 | region), 
+                                data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
+```
+
+```{r}
+#| eval: false
+#| message: false
+#| warning: false
+#| include: false
+niv1_fixed_comp8 <- compare_performance(m_n1.espece.participant.5,m_n1.espece.participant.5.1,
+                                        m_n1.espece.participant.5.2,m_n1.espece.participant.5.3,m_n1.espece.participant.5.4) ; niv1_fixed_comp8
+AIC(m_n1.espece.participant.5,m_n1.espece.participant.5.1,
+                                        m_n1.espece.participant.5.2,m_n1.espece.participant.5.3,m_n1.espece.participant.5.4)
+# print("m_n1.espece.participant.5")
+# summary(m_n1.espece.participant.5)
 ```
 
 # niv1 dredge
