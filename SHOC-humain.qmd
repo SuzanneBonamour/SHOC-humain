@@ -37,12 +37,12 @@ load("SHOC-humain.RData")
 # size
 sort(sapply(ls(), function(x) object.size(get(x))), decreasing = TRUE)
 # alphabet
-obj_sizes <- sapply(ls(), function(x) object.size(get(x)))
-sorted_names <- names(sort(obj_sizes))  # Tri par nom (ordre alphabétique)
-obj_sizes[sorted_names]
-# rm(modele_full, modele_sel)
-rm(list = ls(pattern = "^m0."))
-save.image(file = "SHOC-humain.RData")
+# obj_sizes <- sapply(ls(), function(x) object.size(get(x)))
+# sorted_names <- names(sort(obj_sizes))  # Tri par nom (ordre alphabétique)
+# obj_sizes[sorted_names]
+# rm(m_full_2.1,m_full_2,m_full_4,m_full_3,m_full_2.2,m_full_1)
+# rm(list = ls(pattern = "^niv1_fixed_"))
+# save.image(file = "SHOC-humain.RData")
 
 ```
 
@@ -302,6 +302,8 @@ participant$sexe[participant$email %in% c("duchenne.f@gmail.com","jluc.a1@orange
 table(participant$sexe, useNA = "always")
 
 participant$email[is.na(participant$sexe)==T]
+
+rm(prenoms_h, prenoms_f)
 ```
 
 **Cocheurs**
@@ -845,6 +847,8 @@ dataset %>%
 
 verif_dt <- dataset %>% 
   dplyr::select(avis_niv1, avis_niv2, tendance_shoc, tendance_shoc_niv1, tendance_shoc_niv2, comparaison_niv1, comparaison_niv2)
+
+rm(verif_dt)
 ```
 
 ```{r}
@@ -1179,6 +1183,7 @@ summary(m_n1_base)
 ### espece
 
 ```{r}
+#| eval: false
 #| include: false
 m_n1_esp <- clmm(avis_niv1 ~ tendance_shoc_niv1*espece + (1 | email), data = dt1, link = "logit", Hess = TRUE)
 ```
@@ -1191,6 +1196,7 @@ summary(m_n1_esp)
 ### trait
 
 ```{r}
+#| eval: false
 #| include: false
 
 # abondance *** int ***
@@ -1279,6 +1285,7 @@ summary(m_n1_trait_allint)
 ### participant
 
 ```{r}
+#| eval: false
 #| include: false
 
 # sexe *** int ***
@@ -1726,7 +1733,9 @@ plot_clmm_predictions_multi_x(
 ### espece + participant
 
 ```{r}
+#| eval: false
 #| include: false
+
 m_n1_trait_participant_allint <- clmm(avis_niv1 ~ tendance_shoc_niv1 + 
                     abondance_log + regime + popularite + detectabilite + migrateur + gregaire + fauneFrance + pourcentage_stoc + 
                       sexe + anciennete + expert +
@@ -2056,7 +2065,9 @@ summary(m_n2_base)
 ### espece
 
 ```{r}
+#| eval: false
 #| include: false
+
 m_n2_esp <- clmm(avis_niv2 ~ tendance_shoc_niv2*espece + (1 | email) + (1 | departement), data = dt2, link = "logit", Hess = TRUE)
 ```
 
@@ -2068,13 +2079,16 @@ summary(m_n2_esp)
 ### trait
 
 ```{r}
+#| eval: false
 #| include: false
+
 # abondance ***
 m_n2_trait_2 <- clmm(avis_niv2 ~ tendance_shoc_niv2 + abondance_log + (1 | email) + (1 | departement), 
                      data = dt2, link = "logit", Hess = TRUE)
 anova(m_n2_trait_2, m_n2_base)
-# m_n2_2int <- clmm(avis_niv2 ~ tendance_shoc_niv2*abondance_log + (1 | email) + (1 | departement), data = dt2, link = "logit", Hess = TRUE)
-# anova(m_n2_2, m_n2_2int)
+# m_n2_trait_2int <- clmm(avis_niv2 ~ tendance_shoc_niv2*abondance_log + (1 | email) + (1 | departement), 
+# data = dt2, link = "logit", Hess = TRUE)
+# anova(m_n2_trait_2, m_n2_trait_2int)
 
 # popularite *** int ***
 m_n2_trait_3 <- clmm(avis_niv2 ~ tendance_shoc_niv2 + popularite + (1 | email) + (1 | departement), 
@@ -2098,7 +2112,7 @@ m_n2_trait_5 <- clmm(avis_niv2 ~ tendance_shoc_niv2 + regime + (1 | email) + (1 
 anova(m_n2_trait_5, m_n2_base)
 m_n2_trait_5int <- clmm(avis_niv2 ~ tendance_shoc_niv2*regime + (1 | email) + (1 | departement), 
                         data = dt2, link = "logit", Hess = TRUE)
-anova(m_n2_trait_5, m_n2_5int)
+anova(m_n2_trait_5, m_n2_trait_5int)
 
 # migrateur *** int ***
 m_n2_trait_6 <- clmm(avis_niv2 ~ tendance_shoc_niv2 + migrateur + (1 | email) + (1 | departement), data = dt2, link = "logit", Hess = TRUE)
@@ -2108,21 +2122,21 @@ anova(m_n2_trait_6, m_n2_trait_6int)
 
 # gregaire *** int ***
 m_n2_trait_7 <- clmm(avis_niv2 ~ tendance_shoc_niv2 + gregaire + (1 | email) + (1 | departement), data = dt2, link = "logit", Hess = TRUE)
-anova(m_n2_7, m_n2_base)
+anova(m_n2_trait_7, m_n2_base)
 m_n2_trait_7int <- clmm(avis_niv2 ~ tendance_shoc_niv2*gregaire + (1 | email) + (1 | departement), data = dt2, link = "logit", Hess = TRUE)
 anova(m_n2_trait_7, m_n2_trait_7int) 
 
 # fauneFrance *** int ***
-m_n2_trait_7 <- clmm(avis_niv2 ~ tendance_shoc_niv2 + fauneFrance + (1 | email), data = dt2, link = "logit", Hess = TRUE)
-anova(m_n2_trait_7, m_n2_base)
-m_n2_trait_7int <- clmm(avis_niv2 ~ tendance_shoc_niv2*fauneFrance + (1 | email), data = dt2, link = "logit", Hess = TRUE)
-anova(m_n2_trait_7, m_n2_trait_7int)
+m_n2_trait_8 <- clmm(avis_niv2 ~ tendance_shoc_niv2 + fauneFrance + (1 | email), data = dt2, link = "logit", Hess = TRUE)
+anova(m_n2_trait_8, m_n2_base)
+m_n2_trait_8int <- clmm(avis_niv2 ~ tendance_shoc_niv2*fauneFrance + (1 | email), data = dt2, link = "logit", Hess = TRUE)
+anova(m_n2_trait_8, m_n2_trait_8int)
 
 # pourcentage_stoc *** int ***
-m_n2_trait_8 <- clmm(avis_niv2 ~ tendance_shoc_niv2 + pourcentage_stoc + (1 | email), data = dt2, link = "logit", Hess = TRUE)
-anova(m_n2_trait_8, m_n2_base)
-m_n2_trait_8int <- clmm(avis_niv2 ~ tendance_shoc_niv2*pourcentage_stoc + (1 | email), data = dt2, link = "logit", Hess = TRUE)
-anova(m_n2_trait_8, m_n2_trait_8int)
+m_n2_trait_9 <- clmm(avis_niv2 ~ tendance_shoc_niv2 + pourcentage_stoc + (1 | email), data = dt2, link = "logit", Hess = TRUE)
+anova(m_n2_trait_9, m_n2_base)
+m_n2_trait_9int <- clmm(avis_niv2 ~ tendance_shoc_niv2*pourcentage_stoc + (1 | email), data = dt2, link = "logit", Hess = TRUE)
+anova(m_n2_trait_9, m_n2_trait_9int)
 
 # all
 m_n2_trait_all <- clmm(avis_niv2 ~ tendance_shoc_niv2 + 
@@ -2183,7 +2197,7 @@ m_n2_trait_allint_7 <- clmm(avis_niv2 ~ tendance_shoc_niv2 +
 #| echo: false
 
 AIC_dt_trait_niv_2 <- as.data.frame(AIC(m_n2_trait_2, m_n2_trait_3, m_n2_trait_4, m_n2_trait_5, m_n2_trait_6,
-    m_n2_trait_3int, m_n2_trait_4int, m_n2_trait_5int, m_n2_trait_6int,
+    m_n2_trait_3int, m_n2_trait_4int, m_n2_trait_5int, m_n2_trait_6int, m_n2_trait_7int, m_n2_trait_8int, m_n2_trait_9int,
     m_n2_trait_all, 
     # m_n2_trait_allint, 
     m_n2_trait_allint_2, m_n2_trait_allint_3,
@@ -2195,13 +2209,15 @@ AIC_dt_trait_niv_2 <- as.data.frame(AIC(m_n2_trait_2, m_n2_trait_3, m_n2_trait_4
 AIC_dt_trait_niv_2 <- AIC_dt_trait_niv_2 %>% 
   arrange(AIC) ; AIC_dt_trait_niv_2
 
-summary(m_n2_allint_7)
+summary(m_n2_trait_allint_7)
 ```
 
 ### participant
 
 ```{r}
+#| eval: false
 #| include: false
+
 # sexe *** int ***
 m_n2_participant_1 <- clmm(avis_niv2 ~ tendance_shoc_niv2 + sexe + 
                                 (1 | email) + (1 | departement), data = dt2, link = "logit", Hess = TRUE)
@@ -2400,6 +2416,7 @@ plot_clmm_predictions_multi_x(
 ### espece + participant
 
 ```{r}
+#| eval: false
 #| include: false
 
 m_n2_trait_participant_all <- clmm(avis_niv2 ~ tendance_shoc_niv2 + 
@@ -2480,11 +2497,13 @@ AIC_dt_trait_niv_2 <- as.data.frame(AIC(
                                 m_n2_participant_3int,
                                 m_n2_participant_all, 
                                 # m_n2_participant_allint,
-                                m_n2_2, m_n2_3, m_n2_4, m_n2_5, m_n2_6,
-                                m_n2_3int, m_n2_4int, m_n2_5int, m_n2_6int,
-                                m_n2_all, 
-                                # m_n2_allint, 
-                                m_n2_allint_2, m_n2_allint_3,
+                                m_n2_trait_2, m_n2_trait_3, m_n2_trait_4, m_n2_trait_5, m_n2_trait_6,
+                                m_n2_trait_3int, m_n2_trait_4int, m_n2_trait_5int, m_n2_trait_6int,
+                                m_n2_trait_all, 
+                                # m_n2_trait_allint, 
+                                m_n2_trait_allint_2, m_n2_trait_allint_3,
+                                # m_n2_trait_allint_4, m_n2_trait_allint_5, m_n2_trait_allint_6,
+                                m_n2_trait_allint_7, 
                                 m_n2_trait_participant_all,
                                 # m_n2_trait_participant_allint,
                                 m_n2_trait_participant_allint_5,
@@ -2647,6 +2666,8 @@ summary(lm(mean_intel_dt$mean_avis_niv1_intel ~ mean_intel_dt$sd_avis_niv1_intel
 # save environnement
 
 ```{r}
+#| eval: false
+#| include: false
 save.image(file = "SHOC-humain.RData")
 # load("SHOC-humain.RData")
 ```
