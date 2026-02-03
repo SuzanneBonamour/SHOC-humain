@@ -36,6 +36,7 @@ library(factoextra)
 ```
 
 ```{r}
+#| echo: false
 load("SHOC-humain.RData")
 # size
 # sort(sapply(ls(), function(x) object.size(get(x))), decreasing = TRUE)
@@ -167,6 +168,8 @@ avis <- avis_large %>%
   arrange(email, espece)
 
 # rm(quiz, quiz_2, longTermTrends, avis_large)
+
+head(avis)
 ```
 
 ## participant.es
@@ -308,6 +311,12 @@ participant$email[is.na(participant$sexe)==T]
 rm(prenoms_h, prenoms_f)
 ```
 
+```{r}
+#| echo: false
+print("sexe")
+table(dataset$sexe, useNA = "always")
+```
+
 **Cocheurs**
 
 Correspondance des emails entre les répondant.es au quiz et les 1741 cocheurs sur cocheurs.fr
@@ -428,6 +437,12 @@ participant <- participant %>%
   dplyr::select(-match_rule, -matched_member, -email_clean, -email_start, -prenom, -France)
 ```
 
+```{r}
+#| echo: false
+print("cocheur")
+table(dataset$cocheur, useNA = "always")
+```
+
 **Ancienneté**
 
 Ancienneté déclaré par les répondant.es pour le.s suivis participatifs
@@ -463,6 +478,8 @@ participant <- participant %>%
   rename(anciennete = anciennete_clean)
 
 participant$anciennete[is.na(participant$anciennete)] <- 0
+
+hist(participant$anciennete)
 ```
 
 **Departement**
@@ -591,6 +608,8 @@ participant <- participant %>%
 
 participant$bagueur[participant$bagueur == 1] <- "Oui"
 participant$bagueur[is.na(participant$bagueur)] <- "Non"
+
+head(participant$email[participant$bagueur == "Oui"])
 ```
 
 **Expert sciences participatives**
@@ -606,6 +625,8 @@ participant <- participant %>%
                               bagueur == "Oui" |
                               nb_obs_cocheurs >= 300 ~ "Oui",
                         TRUE ~ "Non"))
+
+head(participant$email[participant$expert == "Oui"])
 ```
 
 **Species**
@@ -865,10 +886,6 @@ rm(avis, avis_large, bagueurs, cocheurs, cocheurs2, departement_info, longTermTr
 #| echo: false
 summary(dataset)
 
-# table(dataset$email, useNA = "always")
-print("espece")
-table(dataset$espece, useNA = "always")
-print("departement")
 table(dataset$departement, useNA = "always")
 print("participation_stoc")
 table(dataset$participation_stoc, useNA = "always")
@@ -876,19 +893,6 @@ print("participation_shoc")
 table(dataset$participation_shoc, useNA = "always")
 print("participation_epoc")
 table(dataset$participation_epoc, useNA = "always")
-print("sexe")
-table(dataset$sexe, useNA = "always")
-print("cocheur")
-table(dataset$cocheur, useNA = "always")
-print("anciennete")
-table(dataset$anciennete, useNA = "always")
-print("region")
-table(dataset$region, useNA = "always")
-print("bioregion")
-table(dataset$bioregion, useNA = "always")
-print("bagueur")
-table(dataset$bagueur, useNA = "always")
-print("expert")
 table(dataset$expert, useNA = "always")
 print("tendances_stoc")
 table(dataset$tendances_stoc, useNA = "always")
@@ -910,8 +914,10 @@ print("migrateur simplifié")
 table(dataset$migrateur_simplifie, useNA = "always")
 print("abondance")
 table(dataset$abondance, useNA = "always")
+hist(dataset$abondance)
 print("abondance log")
 table(dataset$abondance_log, useNA = "always")
+hist(dataset$abondance_log)
 print("fauneFrance")
 table(dataset$fauneFrance, useNA = "always")
 print("regime")
@@ -929,8 +935,6 @@ dataset$comparaison_niv2 <- as.factor(dataset$comparaison_niv2)
 ```
 
 # FREQUENCES
-
-## niv 1
 
 **Shoc vs hasard**
 
@@ -1051,11 +1055,7 @@ Interprétations possibles ?
 
 Chez les participant.es, biais vers le stable, et peu d'aumgmentation. En demandant de répondre pour des tendances, on pense moins facilement à répondre stable ? Et oin parle beaucoup des déclins (média, crise ecolo...), mais peu des augmentations, donc les gens n'y pensent pas ?
 
-## !!! niv 2
-
 # PROPORTION IDENTIQUE vs DIFFERENT
-
-## niv 1
 
 ```{r}
 #| echo: false
@@ -1073,29 +1073,11 @@ dt_prop_niv_1_DA$prop <- dt_prop_niv_1_DA$Freq / sum(dt_prop_niv_1_DA$Freq)
 dt_prop_niv_1_DA
 ```
 
-## !!! niv 2 
-
-```{r}
-#| echo: false
-print("proportion de tendances d'identiques vs différentes, niveau 2")
-
-print("toutes les tendances")
-dt_prop_niv_2 <- as.data.frame(table(dataset$comparaison_niv2, useNA = "always"))
-dt_prop_niv_2$prop <- dt_prop_niv_2$Freq / sum(dt_prop_niv_2$Freq)
-dt_prop_niv_2
-
-print("declin et augmentation seulement")
-dataset_DA <- dataset[dataset$tendance_shoc_niv1 %in% c("Déclin","Augmentation"),]
-dt_prop_niv_2_DA <- as.data.frame(table(dataset_DA$comparaison_niv1, useNA = "always"))
-dt_prop_niv_2_DA$prop <- dt_prop_niv_2_DA$Freq / sum(dt_prop_niv_2_DA$Freq)
-dt_prop_niv_2_DA
-```
-
 # ANALYSES ORDINALES
 
-## niv 1
+Analyses faites ici uniquement sur le niveau 1 "déclin, stable, augmentation), mais les résultats étaient qualitativement les mêmes au niveau 2, même si moins de puissance statistiques.
 
-### données
+## données
 
 ```{r}
 #| include: false
@@ -1137,9 +1119,19 @@ dt1 <- dt1 %>%
     sexe = factor(sexe),
     expert = factor(expert)
   )
+
+dt1 <- dt1 %>% 
+  mutate(abondance_log = scale(abondance_log),
+         anciennete = scale(anciennete),
+         pourcentage_stoc = scale(pourcentage_stoc),
+         fauneFrance = scale(pourcentage_stoc))
+
+head(dt1)
 ```
 
-### aléatoire
+## aléatoire
+
+Sélection de modèle pour les effets aléatoires : email, région, biorégion, departement, email + region, email + bioregion, email + departement
 
 ```{r}
 #| include: false
@@ -1160,6 +1152,8 @@ m_n1.7 <- clmm(avis_niv1 ~ 1 +
                      (1 | email) + (1 | departement), data = dt1, link = "logit", Hess = TRUE, na.action = na.omit)
 ```
 
+Meilleur modèle avec uniquement effets aléatoires :
+
 ```{r}
 #| echo: false
 AIC_dt_n1_aleatoire <- as.data.frame(AIC(m_n1.1, m_n1.2, m_n1.3, m_n1.4, m_n1.5, m_n1.6, m_n1.7))
@@ -1170,7 +1164,11 @@ AIC_dt_n1_aleatoire <- AIC_dt_n1_aleatoire %>%
 summary(m_n1.1)
 ```
 
-### base
+Effet aléatoire "email" dans tous les modèles par la suite.
+
+## perception ~ stats
+
+Modèle estimant la correlation ordinale entre les perceptions et les tendances statistiques.
 
 ```{r}
 #| include: false
@@ -1182,7 +1180,11 @@ m_n1_base <- clmm(avis_niv1 ~ tendance_shoc_niv1 + (1 | email), data = dt1, link
 summary(m_n1_base)
 ```
 
-### espece
+## espece
+
+Modèle estimant la correlation ordinale entre les perceptions et les tendances statistiques en fonction de chaque espèce.
+
+ATTTENTION : tous les coefficient pour chacunes des espèces ne sont pas estimables (modèle à prendre avec des pincettes)
 
 ```{r}
 #| eval: false
@@ -1195,144 +1197,142 @@ m_n1_esp <- clmm(avis_niv1 ~ tendance_shoc_niv1*espece + (1 | email), data = dt1
 summary(m_n1_esp)
 ```
 
-### trait
+## variables de type "trait" des espèces 
 
+### abondance 
 ```{r}
-#| eval: false
-#| include: false
-
+#| echo: false
 # abondance *** int ***
 m_n1_trait_1 <- clmm(avis_niv1 ~ tendance_shoc_niv1 + abondance_log + (1 | email), data = dt1, link = "logit", Hess = TRUE)
 anova(m_n1_trait_1, m_n1_base)
-m_n1_trait_1int <- clmm(avis_niv1 ~ tendance_shoc_niv1*abondance_log + (1 | email), data = dt1, link = "logit", Hess = TRUE)
+m_n1_trait_1int <- clmm(avis_niv1 ~ 1 + tendance_shoc_niv1*abondance_log + (1 | email), data = dt1, link = "logit", Hess = TRUE)
 anova(m_n1_trait_1, m_n1_trait_1int)
+m_n1_trait_1int_no_random <- clm(avis_niv1 ~ 1 + tendance_shoc_niv1*abondance_log, data = dt1, link = "logit", Hess = TRUE)
+summary(m_n1_trait_1)
+summary(m_n1_trait_1int)
+```
 
+### popularité 
+
+```{r}
+#| echo: false
 # popularite *** int ***
 m_n1_trait_2 <- clmm(avis_niv1 ~ tendance_shoc_niv1 + popularite + (1 | email), data = dt1, link = "logit", Hess = TRUE)
 anova(m_n1_trait_2, m_n1_base)
 m_n1_trait_2int <- clmm(avis_niv1 ~ tendance_shoc_niv1*popularite + (1 | email), data = dt1, link = "logit", Hess = TRUE)
 anova(m_n1_trait_2, m_n1_trait_2int) 
+m_n1_trait_2int_no_random <- clm(avis_niv1 ~ tendance_shoc_niv1*popularite, data = dt1, link = "logit", Hess = TRUE)
+summary(m_n1_trait_2)
+summary(m_n1_trait_2int)
+```
 
+### détectabilité
+
+```{r}
+#| echo: false
 # detectabilite *** int ***
 m_n1_trait_3 <- clmm(avis_niv1 ~ tendance_shoc_niv1 + detectabilite + (1 | email), data = dt1, link = "logit", Hess = TRUE)
 anova(m_n1_trait_3, m_n1_base)
 m_n1_trait_3int <- clmm(avis_niv1 ~ tendance_shoc_niv1*detectabilite + (1 | email), data = dt1, link = "logit", Hess = TRUE)
 anova(m_n1_trait_3, m_n1_trait_3int) 
+m_n1_trait_3int_no_random <- clm(avis_niv1 ~ tendance_shoc_niv1*detectabilite, data = dt1, link = "logit", Hess = TRUE)
+summary(m_n1_trait_3)
+summary(m_n1_trait_3int)
+```
 
+### régime
+
+```{r}
+#| echo: false
 # regime *** int ***
 m_n1_trait_4 <- clmm(avis_niv1 ~ tendance_shoc_niv1 + regime + (1 | email), data = dt1, link = "logit", Hess = TRUE)
 anova(m_n1_trait_4, m_n1_base)
 m_n1_trait_4int <- clmm(avis_niv1 ~ tendance_shoc_niv1*regime + (1 | email), data = dt1, link = "logit", Hess = TRUE)
 anova(m_n1_trait_4, m_n1_trait_4int)
+m_n1_trait_4int_no_random <- clm(avis_niv1 ~ tendance_shoc_niv1*regime, data = dt1, link = "logit", Hess = TRUE)
+summary(m_n1_trait_4)
+summary(m_n1_trait_4int)
+```
 
+### migrateur
+
+```{r}
+#| echo: false
 # migrateur *** int ***
 m_n1_trait_5 <- clmm(avis_niv1 ~ tendance_shoc_niv1 + migrateur + (1 | email), data = dt1, link = "logit", Hess = TRUE)
 anova(m_n1_trait_5, m_n1_base)
 m_n1_trait_5int <- clmm(avis_niv1 ~ tendance_shoc_niv1*migrateur + (1 | email), data = dt1, link = "logit", Hess = TRUE)
 anova(m_n1_trait_5, m_n1_trait_5int) 
+m_n1_trait_5int_no_random <- clm(avis_niv1 ~ tendance_shoc_niv1*migrateur, data = dt1, link = "logit", Hess = TRUE)
+summary(m_n1_trait_5)
+summary(m_n1_trait_5int)
+```
 
+### gregaire 
+
+```{r}
+#| echo: false
 # gregaire *** int ***
 m_n1_trait_6 <- clmm(avis_niv1 ~ tendance_shoc_niv1 + gregaire + (1 | email), data = dt1, link = "logit", Hess = TRUE)
 anova(m_n1_trait_6, m_n1_base)
 m_n1_trait_6int <- clmm(avis_niv1 ~ tendance_shoc_niv1*gregaire + (1 | email), data = dt1, link = "logit", Hess = TRUE)
 anova(m_n1_trait_6, m_n1_trait_6int) 
+m_n1_trait_6int_no_random <- clm(avis_niv1 ~ tendance_shoc_niv1*gregaire, data = dt1, link = "logit", Hess = TRUE)
+summary(m_n1_trait_6)
+summary(m_n1_trait_6int)
+```
 
+### fauneFrance
+
+```{r}
+#| echo: false
 # fauneFrance *** int ***
 m_n1_trait_7 <- clmm(avis_niv1 ~ tendance_shoc_niv1 + fauneFrance + (1 | email), data = dt1, link = "logit", Hess = TRUE)
 anova(m_n1_trait_7, m_n1_base)
 m_n1_trait_7int <- clmm(avis_niv1 ~ tendance_shoc_niv1*fauneFrance + (1 | email), data = dt1, link = "logit", Hess = TRUE)
 anova(m_n1_trait_7, m_n1_trait_7int)
+m_n1_trait_7int_no_random <- clm(avis_niv1 ~ tendance_shoc_niv1*fauneFrance, data = dt1, link = "logit", Hess = TRUE)
+summary(m_n1_trait_7)
+summary(m_n1_trait_7int)
+```
 
+### pourcentage tendance stoc
+
+```{r}
+#| echo: false
 # pourcentage_stoc *** int ***
 m_n1_trait_8 <- clmm(avis_niv1 ~ tendance_shoc_niv1 + pourcentage_stoc + (1 | email), data = dt1, link = "logit", Hess = TRUE)
 anova(m_n1_trait_8, m_n1_base)
 m_n1_trait_8int <- clmm(avis_niv1 ~ tendance_shoc_niv1*pourcentage_stoc + (1 | email), data = dt1, link = "logit", Hess = TRUE)
 anova(m_n1_trait_8, m_n1_trait_8int)
-
-# all
-m_n1_trait_all <- clmm(avis_niv1 ~ tendance_shoc_niv1 + 
-                    abondance_log + popularite + detectabilite + regime + migrateur + gregaire + fauneFrance + pourcentage_stoc + 
-                    (1 | email), data = dt1, link = "logit", Hess = TRUE)
-# m_n1_trait_allint <- clmm(avis_niv1 ~ tendance_shoc_niv1 + 
-#                     abondance_log + regime + popularite + detectabilite + migrateur + gregaire + fauneFrance + pourcentage_stoc + 
-#                     tendance_shoc_niv1:(abondance_log + popularite + detectabilite + regime + 
-#                                           migrateur + gregaire + fauneFrance + pourcentage_stoc) + (1 | email), 
-#                     data = dt1, link = "logit", Hess = TRUE)
-# m_n1_trait_allint_1 <- clmm(avis_niv1 ~ tendance_shoc_niv1 + 
-#                     abondance_log + regime + popularite + detectabilite + migrateur + gregaire + fauneFrance + pourcentage_stoc + 
-#                     tendance_shoc_niv1:(abondance_log + popularite + detectabilite + regime + 
-#                                           migrateur + gregaire + fauneFrance) + (1 | email), 
-#                     data = dt1, link = "logit", Hess = TRUE)
-# m_n1_trait_allint_2 <- clmm(avis_niv1 ~ tendance_shoc_niv1 + 
-#                     abondance_log + regime + popularite + detectabilite + migrateur + gregaire + fauneFrance + pourcentage_stoc + 
-#                     tendance_shoc_niv1:(abondance_log + popularite + detectabilite + regime + 
-#                                           migrateur + gregaire) + (1 | email), 
-#                     data = dt1, link = "logit", Hess = TRUE)
-m_n1_trait_allint_3 <- clmm(avis_niv1 ~ tendance_shoc_niv1 + 
-                    abondance_log + regime + popularite + detectabilite + migrateur + gregaire + fauneFrance + pourcentage_stoc + 
-                    tendance_shoc_niv1:(abondance_log + popularite + detectabilite) + (1 | email), 
-                    data = dt1, link = "logit", Hess = TRUE)
-m_n1_trait_allint_4 <- clmm(avis_niv1 ~ tendance_shoc_niv1 + 
-                    abondance_log + regime + popularite + detectabilite + migrateur + gregaire + fauneFrance + pourcentage_stoc + 
-                    tendance_shoc_niv1:(abondance_log + popularite) + (1 | email), 
-                    data = dt1, link = "logit", Hess = TRUE)
-m_n1_trait_allint_5 <- clmm(avis_niv1 ~ tendance_shoc_niv1 + 
-                    abondance_log + regime + popularite + detectabilite + migrateur + gregaire + fauneFrance + pourcentage_stoc + 
-                    tendance_shoc_niv1:(abondance_log) + (1 | email), 
-                    data = dt1, link = "logit", Hess = TRUE)
-m_n1_trait_allint_6 <- clmm(avis_niv1 ~ tendance_shoc_niv1 + 
-                    abondance_log + regime + popularite + detectabilite + migrateur + gregaire + fauneFrance + pourcentage_stoc + 
-                    tendance_shoc_niv1:(abondance_log + popularite + detectabilite + gregaire) + (1 | email), 
-                    data = dt1, link = "logit", Hess = TRUE)
-m_n1_trait_allint_7 <- clmm(avis_niv1 ~ tendance_shoc_niv1 + 
-                    abondance_log + regime + popularite + detectabilite + migrateur + gregaire + fauneFrance + pourcentage_stoc + 
-                    tendance_shoc_niv1:(abondance_log + popularite + detectabilite + pourcentage_stoc) + (1 | email), 
-                    data = dt1, link = "logit", Hess = TRUE)
-m_n1_trait_allint_8 <- clmm(avis_niv1 ~ tendance_shoc_niv1 + 
-                    abondance_log + regime + popularite + detectabilite + migrateur + gregaire + fauneFrance + pourcentage_stoc + 
-                    tendance_shoc_niv1:(abondance_log + popularite + gregaire + pourcentage_stoc) + (1 | email), 
-                    data = dt1, link = "logit", Hess = TRUE)
-m_n1_trait_allint_9 <- clmm(avis_niv1 ~ tendance_shoc_niv1 + 
-                    abondance_log + regime + popularite + detectabilite + migrateur + gregaire + pourcentage_stoc + 
-                    tendance_shoc_niv1:(abondance_log + popularite + detectabilite + pourcentage_stoc) + (1 | email), 
-                    data = dt1, link = "logit", Hess = TRUE)
-m_n1_trait_allint_10 <- clmm(avis_niv1 ~ tendance_shoc_niv1 + 
-                    abondance_log + popularite + detectabilite + pourcentage_stoc + 
-                    tendance_shoc_niv1:(abondance_log + popularite + detectabilite + pourcentage_stoc) + (1 | email), 
-                    data = dt1, link = "logit", Hess = TRUE)
-m_n1_trait_allint_11 <- clmm(avis_niv1 ~ tendance_shoc_niv1 + 
-                    abondance_log + regime + popularite + detectabilite + migrateur + gregaire + pourcentage_stoc + 
-                    tendance_shoc_niv1:(abondance_log + pourcentage_stoc) + (1 | email), 
-                    data = dt1, link = "logit", Hess = TRUE)
-m_n1_trait_allint_12 <- clmm(avis_niv1 ~ tendance_shoc_niv1 + 
-                    abondance_log + pourcentage_stoc + 
-                    tendance_shoc_niv1:(abondance_log + pourcentage_stoc) + (1 | email), 
-                    data = dt1, link = "logit", Hess = TRUE)
+m_n1_trait_8int_no_random <- clm(avis_niv1 ~ tendance_shoc_niv1*pourcentage_stoc, data = dt1, link = "logit", Hess = TRUE)
+summary(m_n1_trait_8)
+summary(m_n1_trait_8int)
 ```
+
+### comparaison modèle par AIC
 
 ```{r}
 #| echo: false
 AIC_dt_trait <- as.data.frame(AIC(m_n1_base, 
-                                  m_n1_trait_1, m_n1_trait_2, m_n1_trait_3, m_n1_trait_4, m_n1_trait_5, m_n1_trait_6,m_n1_trait_7,m_n1_trait_8,
-                                  m_n1_trait_3int, m_n1_trait_4int, m_n1_trait_5int, m_n1_trait_6int, m_n1_trait_7int, m_n1_trait_8int, 
-                                  m_n1_trait_all,
-                                  m_n1_trait_allint_3, m_n1_trait_allint_4, m_n1_trait_allint_5, m_n1_trait_allint_6, m_n1_trait_allint_7,
-                                  m_n1_trait_allint_8, m_n1_trait_allint_9, m_n1_trait_allint_10, m_n1_trait_allint_11, m_n1_trait_allint_12))
+                                  m_n1_trait_1, m_n1_trait_2, m_n1_trait_3, 
+                                  m_n1_trait_4, m_n1_trait_5, m_n1_trait_6,
+                                  m_n1_trait_7,m_n1_trait_8,
+                                  m_n1_trait_1int, m_n1_trait_2int, m_n1_trait_3int, 
+                                  m_n1_trait_4int, m_n1_trait_5int, m_n1_trait_6int, 
+                                  m_n1_trait_7int, m_n1_trait_8int
+                             ))
 
 AIC_dt_trait <- AIC_dt_trait %>% 
   arrange(AIC) ; AIC_dt_trait
-
-summary(m_n1_trait_allint_9)
-
-vif(m_n1_trait_allint_9)
 ```
 
-### participant
+## variables liées aux participants
+
+### sexe
 
 ```{r}
-#| eval: false
-#| include: false
-
+#| echo: false
 # sexe *** int ***
 m_n1_participant_1 <- clmm(avis_niv1 ~ tendance_shoc_niv1 + sexe + 
                                 (1 | email), data = dt1, link = "logit", Hess = TRUE)
@@ -1340,7 +1340,15 @@ anova(m_n1_participant_1, m_n1_base)
 m_n1_participant_1int <- clmm(avis_niv1 ~ tendance_shoc_niv1*sexe + 
                                    (1 | email), data = dt1, link = "logit", Hess = TRUE)
 anova(m_n1_participant_1, m_n1_participant_1int) 
+m_n1_participant_1int_no_random <- clm(avis_niv1 ~ tendance_shoc_niv1*sexe, data = dt1, link = "logit", Hess = TRUE)
+summary(m_n1_participant_1)
+summary(m_n1_participant_1int)
+```
 
+### anciennete
+
+```{r}
+#| echo: false
 # anciennete int ***
 m_n1_participant_2 <- clmm(avis_niv1 ~ tendance_shoc_niv1 + anciennete + 
                                 (1 | email), data = dt1, link = "logit", Hess = TRUE)
@@ -1348,7 +1356,15 @@ anova(m_n1_participant_2, m_n1_base)
 m_n1_participant_2int <- clmm(avis_niv1 ~ tendance_shoc_niv1*anciennete + 
                                    (1 | email), data = dt1, link = "logit", Hess = TRUE)
 anova(m_n1_participant_2, m_n1_participant_2int) 
+m_n1_participant_2int_no_random <- clm(avis_niv1 ~ tendance_shoc_niv1*anciennete, data = dt1, link = "logit", Hess = TRUE)
+summary(m_n1_participant_2)
+summary(m_n1_participant_2int)
+```
 
+### expert
+
+```{r}
+#| echo: false
 # expert int ***
 m_n1_participant_3 <- clmm(avis_niv1 ~ tendance_shoc_niv1 + expert + 
                                 (1 | email), data = dt1, link = "logit", Hess = TRUE)
@@ -1356,294 +1372,751 @@ anova(m_n1_participant_3, m_n1_base)
 m_n1_participant_3int <- clmm(avis_niv1 ~ tendance_shoc_niv1*expert + 
                                    (1 | email), data = dt1, link = "logit", Hess = TRUE)
 anova(m_n1_participant_3, m_n1_participant_3int) 
-
-# all 
-m_n1_participant_all <- clmm(avis_niv1 ~ tendance_shoc_niv1 +
-                    sexe + anciennete + expert +
-                    (1 | email), data = dt1, link = "logit", Hess = TRUE)
-m_n1_participant_allint <- clmm(avis_niv1 ~ tendance_shoc_niv1 +
-                    sexe + anciennete + expert + 
-                    tendance_shoc_niv1:(sexe + anciennete + expert) +
-                    (1 | email), data = dt1, link = "logit", Hess = TRUE)
-
+m_n1_participant_3int_no_random <- clm(avis_niv1 ~ tendance_shoc_niv1*expert, data = dt1, link = "logit", Hess = TRUE)
+summary(m_n1_participant_3)
+summary(m_n1_participant_3int)
 ```
+
+### comparaison modèle par AIC
 
 ```{r}
 #| echo: false
 AIC_dt_n1_participant <- as.data.frame(AIC(m_n1_base, 
                                 m_n1_participant_1, m_n1_participant_2, m_n1_participant_3,
-                                m_n1_participant_1int, m_n1_participant_2int, m_n1_participant_3int,
-                                m_n1_participant_all, m_n1_participant_allint))
+                                m_n1_participant_1int, m_n1_participant_2int, m_n1_participant_3int))
 
 AIC_dt_n1_participant <- AIC_dt_n1_participant %>% 
   arrange(AIC) ; AIC_dt_n1_participant
-
-summary(m_n1_participant_allint)
 ```
 
-### plot (latente)
+## graphiques des résultats 
+
+### coeffients des modèles
+
+```{r}
+#| echo: false
+#| fig-height: 7
+#| fig-width: 10
+
+results_model_dt1 <- list(
+  abondance_log    = summary(m_n1_trait_1int)$coefficients,
+  popularite       = summary(m_n1_trait_2int)$coefficients,
+  detectabilite    = summary(m_n1_trait_3int)$coefficients,
+  # regime           = m_n1_trait_4int,
+  # migrateur        = m_n1_trait_5int,
+  # gregaire         = m_n1_trait_6int
+  fauneFrance      = summary(m_n1_trait_7int)$coefficients,
+  pourcentage_stoc = summary(m_n1_trait_8int)$coefficients,
+  sexe             = summary(m_n1_participant_1int)$coefficients,
+  anciennete       = summary(m_n1_participant_2int)$coefficients,
+  expert           = summary(m_n1_participant_3int)$coefficients
+)
+
+# Initialiser une liste vide pour stocker les data frames modifiés
+results_model_dt2_list <- list()
+
+# Parcourir chaque élément de la liste results_model_dt1
+for (name in names(results_model_dt1)) {
+  # Convertir l'objet en data frame
+  df <- as.data.frame(results_model_dt1[[name]])
+  # Ajouter une colonne "variable" avec le nom de l'élément
+  df$variable <- name
+  # Ajouter le data frame modifié à la liste
+  results_model_dt2_list[[name]] <- df
+}
+
+# Combiner tous les data frames en un seul
+results_model_dt2 <- do.call(rbind, results_model_dt2_list)
+
+coef_df <- data.frame(
+  Term = rownames(results_model_dt2),
+  Estimate = results_model_dt2[, "Estimate"],
+  Std.Error = results_model_dt2[, "Std. Error"],
+  p.value = results_model_dt2[, "Pr(>|z|)"],
+  variable = results_model_dt2$variable
+)
+
+# Afficher le résultat
+head(coef_df)
+
+# Filtrer les "Threshold coefficients" (lignes contenant "|")
+coef_df <- coef_df %>%
+  filter(!grepl("\\|", Term))
+
+# Ajout d'une colonne pour indiquer si le coefficient est significatif
+coef_df$significatif <- ifelse(coef_df$p.value < 0.05, "Oui", "Non")
+
+
+coef_df$Type <- case_when(
+  grepl("^tendance_shoc_niv1\\.[LQ]$", coef_df$Term) ~ "Tendance SHOC",
+  grepl("tendance_shoc_niv1\\.Q:", coef_df$Term) ~ "Interaction avec SHOC (quadratique)",
+  grepl(":", coef_df$Term) ~ "Interaction avec SHOC (linéaire)",
+  TRUE ~ "Variable"
+)
+
+# Nettoyage des noms de termes (optionnel)
+coef_df$Term <- gsub("tendance_shoc_niv1\\.", "tendance_shoc_niv1_", coef_df$Term)
+coef_df$Term <- gsub("\\:", "_", coef_df$Term)
+
+# Fonction pour simplifier les noms
+simplifier_nom <- function(nom) {
+  if (grepl("tendance_shoc_niv1_L$", nom)) {
+    return("SHOC (linéaire)")
+  } else if (grepl("tendance_shoc_niv1_Q$", nom)) {
+    return("SHOC (quadratique)")
+  } else if (grepl("tendance_shoc_niv1_L_", nom)) {
+    suffixe <- strsplit(nom, "tendance_shoc_niv1_L_")[[1]][2]
+    return(paste("SHOC (linéaire) :", suffixe))
+  } else if (grepl("tendance_shoc_niv1_Q_", nom)) {
+    suffixe <- strsplit(nom, "tendance_shoc_niv1_Q_")[[1]][2]
+    return(paste("SHOC (quadratique) :", suffixe))
+  } else {
+    # Si aucune règle ne s'applique, retourner le nom original
+    return(gsub(".*\\.", "", nom))
+  }
+}
+
+# Appliquer la fonction à la colonne Term
+coef_df$Term_simplifie <- sapply(coef_df$Term, simplifier_nom)
+
+# Trier les termes par ordre alphabétique dans chaque facette
+coef_df <- coef_df %>%
+  group_by(Type) %>%
+  mutate(Term = factor(Term_simplifie, levels = sort(unique(Term_simplifie)))) %>%
+  ungroup()
+
+coef_df %>% 
+  group_by(Type) %>% 
+  mutate(Term_simplifie = fct_reorder(Term_simplifie, Estimate, .fun='median')) %>% 
+  ggplot(aes(x = Estimate, y = reorder(Term_simplifie, Estimate))) +
+  geom_errorbarh(
+    aes(xmin = Estimate - 1.96 * Std.Error,
+        xmax = Estimate + 1.96 * Std.Error),
+    height = 0,
+    color = "black"
+  ) +
+  geom_point(
+    aes(shape = significatif, fill = significatif),
+    size = 1,
+    color = "black"
+  ) +
+  scale_shape_manual(
+    values = c("Oui" = 21, "Non" = 21)
+  ) +
+  scale_fill_manual(
+    values = c("Oui" = "black", "Non" = "white")
+  ) +
+  geom_vline(xintercept = 0, linetype = "dotted", color = "grey", size = 1) +
+  scale_x_continuous(breaks = seq(-100, 100, by = 1)) + 
+  facet_wrap(~ variable, scales = "free_y", ncol = 2) +
+  labs(
+    x = "Valeur du coefficient",
+    y = "Variable",
+    title = "Coefficients du modèle et intervalles de confiance à 95%",
+    shape = "Significatif",
+    fill = "Significatif"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.text.y = element_text(size = 8),
+    legend.position = "bottom"
+  )
+```
+
+**Interprétation**
+
+**1**. Modèle avec abondance_log
+
+Effet principal
+
+L’abondance (log-transformée) a un effet positif significatif sur la réponse ordinale.
+
+👉 Plus l’abondance augmente, plus la probabilité d’appartenir à une catégorie élevée de la variable réponse augmente.
+
+Effet du SHOC
+
+Le terme linéaire du SHOC est positif.
+
+Le terme quadratique du SHOC est négatif.
+
+👉 Relation non linéaire : l’effet du SHOC augmente jusqu’à un certain niveau puis diminue.
+
+Interaction SHOC × abondance
+
+Les interactions sont faibles ou non significatives.
+
+👉 L’effet de l’abondance est globalement stable quel que soit le niveau du SHOC.
+
+**2**. Modèle avec anciennete
+
+Effet principal
+
+L’ancienneté a un effet positif significatif.
+
+👉 Les individus/sites plus anciens sont associés à des niveaux plus élevés de la réponse ordinale.
+
+Effet du SHOC
+
+Effet linéaire positif et effet quadratique négatif.
+
+👉 Réponse maximale pour des valeurs intermédiaires du SHOC.
+
+Interaction SHOC × ancienneté
+
+Interaction linéaire significative et négative.
+👉 L’effet positif de l’ancienneté diminue lorsque le SHOC augmente.
+
+**3**. Modèle avec detectabilite
+
+Effet principal
+
+Une forte détectabilité a un effet positif très marqué.
+
+👉 Les observations plus détectables sont associées à des catégories plus élevées de la réponse.
+
+Effet du SHOC
+
+Effet linéaire positif.
+
+Effet quadratique négatif.
+
+👉 Effet non linéaire du SHOC, cohérent avec un optimum intermédiaire.
+
+Interaction SHOC × détectabilité
+
+Interaction quadratique significative.
+
+👉 Le rôle de la détectabilité varie selon le niveau du SHOC, surtout aux valeurs extrêmes.
+
+**4**. Modèle avec expert
+
+Effet principal
+
+Le statut d’expert a un effet faible ou non significatif.
+
+👉 Être expert n’influence pas directement la réponse ordinale.
+
+Effet du SHOC
+
+Effet linéaire positif, quadratique négatif.
+
+👉 Relation non linéaire robuste.
+
+Interaction SHOC × expert
+
+Non significative.
+
+👉 L’effet du SHOC est similaire chez les experts et non-experts.
+
+**5**. Modèle avec fauneFrance
+
+Effet principal
+
+FauneFrance a un effet positif significatif.
+
+👉 Les données issues de FauneFrance sont associées à des niveaux plus élevés de la réponse.
+
+Effet du SHOC
+
+Effet linéaire positif, quadratique négatif.
+
+Interaction SHOC × FauneFrance
+
+Interaction quadratique négative significative.
+
+👉 L’effet positif de FauneFrance est atténué lorsque le SHOC est élevé.
+
+**6**. Modèle avec popularite
+
+Effet principal
+
+La popularité a un effet positif significatif.
+
+👉 Les espèces/objets plus populaires ont une probabilité plus élevée d’être dans une catégorie ordinale élevée.
+
+Effet du SHOC
+
+Effet linéaire positif.
+
+Effet quadratique négatif.
+
+Interaction SHOC × popularité
+
+Interaction quadratique négative.
+
+👉 L’effet de la popularité est moins marqué aux niveaux élevés de SHOC.
+
+**7**. Modèle avec pourcentage_stoc
+
+Effet principal
+
+Le pourcentage STOC a un effet positif significatif.
+
+👉 Une plus forte représentation STOC est associée à des catégories plus élevées.
+
+Effet du SHOC
+
+Effet linéaire positif, quadratique négatif.
+
+Interaction SHOC × pourcentage STOC
+
+Interaction quadratique négative.
+
+👉 L’effet du STOC diminue lorsque le SHOC devient élevé.
+
+**8**. Modèle avec sexe
+
+Effet principal
+
+Le sexe (H) a un effet faible ou modéré, parfois significatif.
+
+👉 Le sexe peut influencer la réponse, mais l’effet reste limité.
+
+Effet du SHOC
+
+Effet linéaire positif.
+
+Effet quadratique négatif.
+
+Interaction SHOC × sexe
+
+Non significative.
+
+👉 La relation SHOC–réponse ne dépend pas du sexe.
+
+**Conclusion générale (très important)**
+
+Le SHOC est un déterminant majeur, avec un effet non linéaire cohérent dans tous les modèles.
+
+La plupart des variables explicatives ont un effet positif direct sur la réponse ordinale.
+
+Les interactions sont généralement faibles, mais certaines montrent une atténuation de l’effet des variables lorsque le SHOC est élevé.
+
+Les résultats sont stables, cohérents et biologiquement/interprétativement plausibles.
+
+### probabilité (non cumulative) d'être dans une catégorie donnée
+
+```{r}
+#| echo: false
+
+# fonction ----------------------------------------------------------------------
+
+#' Créer des graphiques de prédictions pour modèles ordinaux
+#'
+#' @param models_list Liste nommée des modèles (noms = noms des variables)
+#' @param x_values_list Liste nommée des valeurs x à utiliser pour chaque variable
+#' @param data Dataframe original utilisé pour l'ajustement
+#' @param n_points Nombre de points pour la séquence (par défaut 50)
+#' @param save_plots Sauvegarder les graphiques individuels (par défaut TRUE)
+#' @param output_dir Répertoire de sortie pour les graphiques (par défaut "plots")
+#'
+#' @return Liste contenant les graphiques individuels et combinés
+plot_ordinal_predictions <- function(models_list,
+                                     x_values_list,
+                                     data,
+                                     n_points = 50,
+                                     save_plots = TRUE,
+                                     output_dir = "plots") {
+  
+  # Créer le répertoire de sortie si nécessaire
+  if (save_plots && !dir.exists(output_dir)) {
+    dir.create(output_dir, recursive = TRUE)
+  }
+  
+  # Liste pour stocker les graphiques
+  plot_list <- list()
+  
+  # Boucle sur chaque variable/modèle
+  for (var_name in names(models_list)) {
+    
+    cat("\nTraitement de:", var_name, "\n")
+    
+    model <- models_list[[var_name]]
+    x_vals <- x_values_list[[var_name]]
+    
+    # Obtenir le modèle sans effets aléatoires
+    model_no_random <- model
+    
+    # Créer newdata
+    newdat <- model.frame(terms(model_no_random), data = data)
+    
+    # Identifier la variable prédictrice principale (celle qui n'est pas tendance_shoc_niv1)
+    all_vars <- names(newdat)
+    predictor_var <- setdiff(
+      all_vars[!grepl("tendance|avis", all_vars)],
+      c()
+    )[1]
+    
+    cat("Variable prédictrice identifiée:", predictor_var, "\n")
+    cat("Classe dans data:", class(data[[predictor_var]]), "\n")
+    
+    # Vérifier si c'est une variable continue ou catégorielle
+    is_continuous <- is.numeric(data[[predictor_var]])
+    
+    if (is_continuous) {
+      # Variable continue
+      newdat <- expand.grid(
+        tendance_shoc_niv1 = levels(newdat$tendance_shoc_niv1),
+        x_var = seq(
+          min(newdat[[predictor_var]], na.rm = TRUE),
+          max(newdat[[predictor_var]], na.rm = TRUE),
+          length.out = n_points
+        )
+      )
+      names(newdat)[names(newdat) == "x_var"] <- predictor_var
+      newdat[[predictor_var]] <- matrix(newdat[[predictor_var]], ncol = 1)
+      
+    } else {
+      # Variable catégorielle
+      cat("Niveaux de la variable:", levels(data[[predictor_var]]), "\n")
+      newdat <- expand.grid(
+        tendance_shoc_niv1 = levels(newdat$tendance_shoc_niv1),
+        x_var = levels(data[[predictor_var]])
+      )
+      names(newdat)[names(newdat) == "x_var"] <- predictor_var
+    }
+    
+    cat("Dimensions de newdat:", nrow(newdat), "lignes\n")
+    
+    # Prédictions
+    pred <- predict(model_no_random, newdata = newdat, type = "prob")
+    pred_df <- cbind(newdat, as.data.frame(pred))
+    
+    cat("Colonnes de pred_df:", paste(names(pred_df), collapse = ", "), "\n")
+    cat("Premières lignes de pred_df:\n")
+    print(head(pred_df))
+    
+    # Transformer en format long
+    pred_long <- pred_df %>%
+      pivot_longer(
+        cols = starts_with("fit."),
+        names_to = "categorie",
+        values_to = "prob"
+      ) %>%
+      mutate(
+        categorie = gsub("^fit\\.", "", categorie),
+        categorie = factor(
+          categorie,
+          levels = levels(data$avis_niv1),
+          ordered = TRUE
+        )
+      )
+    
+    cat("Dimensions de pred_long:", nrow(pred_long), "lignes\n")
+    cat("Résumé des probabilités:\n")
+    print(summary(pred_long$prob))
+    
+    # Créer le label de l'axe x
+    x_label <- switch(
+      var_name,
+      "abondance_log" = "Abondance (log)",
+      "popularite" = "Popularité",
+      "detectabilite" = "Détectabilité",
+      "fauneFrance" = "Faune de France",
+      "pourcentage_stoc" = "Pourcentage STOC",
+      "sexe" = "Sexe",
+      "anciennete" = "Ancienneté (années)",
+      "expert" = "Expert",
+      var_name
+    )
+    
+    # Créer le graphique
+    p <- ggplot(pred_long,
+                aes(x = .data[[predictor_var]],
+                    y = prob,
+                    color = tendance_shoc_niv1)) +
+      facet_wrap(~ categorie, nrow = 1) +
+      scale_y_continuous(limits = c(0, 1)) +
+      labs(
+        x = x_label,
+        y = "Probabilité prédite",
+        color = "Tendance SHOC",
+        title = paste("Prédictions pour:", x_label)
+      ) +
+      theme_minimal(base_size = 14) +
+      theme(
+        strip.background = element_blank(),
+        strip.text = element_text(face = "bold"),
+        legend.position = "bottom"
+      )
+    
+    # Ajouter geom_line pour continu, geom_point + geom_line pour catégoriel
+    if (is_continuous) {
+      p <- p + geom_line(linewidth = 1)
+    } else {
+      # Pour les variables catégorielles, utiliser une position numérique
+      p <- ggplot(pred_long,
+                  aes(x = .data[[predictor_var]],
+                      y = prob,
+                      color = tendance_shoc_niv1,
+                      group = tendance_shoc_niv1)) +
+        # geom_point(size = 3) +
+        geom_line(linewidth = 1) +
+        facet_wrap(~ categorie, nrow = 1) +
+        scale_y_continuous(limits = c(0, 1)) +
+        labs(
+          x = x_label,
+          y = "Probabilité prédite",
+          color = "Tendance SHOC",
+          title = paste("Prédictions pour:", x_label)
+        ) +
+        theme_minimal(base_size = 14) +
+        theme(
+          strip.background = element_blank(),
+          strip.text = element_text(face = "bold"),
+          legend.position = "bottom"
+        )
+    }
+    
+    # Ajouter des points verticaux pour les valeurs spécifiques si fournies
+    if (!is.null(x_vals) && is_continuous) {
+      p <- p + 
+        geom_vline(xintercept = x_vals, 
+                   linetype = "dashed", 
+                   alpha = 0.5,
+                   color = "gray30")
+    }
+    
+    # Stocker le graphique
+    plot_list[[var_name]] <- p
+    
+    # Sauvegarder si demandé
+    if (save_plots) {
+      ggsave(
+        filename = file.path(output_dir, paste0("pred_", var_name, ".png")),
+        plot = p,
+        width = 12,
+        height = 6,
+        dpi = 300
+      )
+      cat("Graphique sauvegardé:", file.path(output_dir, paste0("pred_", var_name, ".png")), "\n")
+    }
+  }
+  
+  # Créer un graphique combiné
+  combined_plot <- wrap_plots(plot_list, ncol = 1) +
+    plot_annotation(
+      title = "Prédictions pour tous les modèles",
+      theme = theme(plot.title = element_text(size = 16, face = "bold"))
+    )
+  
+  if (save_plots) {
+    ggsave(
+      filename = file.path(output_dir, "pred_combined.png"),
+      plot = combined_plot,
+      width = 12,
+      height = 6 * length(plot_list),
+      dpi = 300
+    )
+    cat("\nGraphique combiné sauvegardé:", file.path(output_dir, "pred_combined.png"), "\n")
+  }
+  
+  return(list(
+    individual_plots = plot_list,
+    combined_plot = combined_plot
+  ))
+}
+
+# Définir les listes de modèles et valeurs x
+models_list <- list(
+  abondance_log    = m_n1_trait_1int_no_random,
+  popularite       = m_n1_trait_2int_no_random,
+  detectabilite    = m_n1_trait_3int_no_random,
+  fauneFrance      = m_n1_trait_7int_no_random,
+  pourcentage_stoc = m_n1_trait_8int_no_random,
+  sexe             = m_n1_participant_1int_no_random,
+  anciennete       = m_n1_participant_2int_no_random,
+  expert           = m_n1_participant_3int_no_random
+)
+
+# range des variables à simuler
+x_values_list <- list(
+  abondance_log    = c(min(dt1$abondance_log), median(dt1$abondance_log), max(dt1$abondance_log)),
+  popularite       = NULL,
+  detectabilite    = NULL,
+  fauneFrance      = c(min(dt1$fauneFrance), median(dt1$fauneFrance), max(dt1$fauneFrance)),
+  pourcentage_stoc = c(min(dt1$pourcentage_stoc), median(dt1$pourcentage_stoc), max(dt1$pourcentage_stoc)),
+  sexe             = NULL,
+  anciennete       = c(min(dt1$anciennete), median(dt1$anciennete), max(dt1$anciennete)),
+  expert           = NULL
+)
+
+# Générer tous les graphiques
+results <- plot_ordinal_predictions(
+  models_list = models_list,
+  x_values_list = x_values_list,
+  data = dt1,
+  n_points = 50,
+  save_plots = TRUE,
+  output_dir = "plots_predictions"
+)
+
+# Accéder aux graphiques individuels
+results$individual_plots$abondance_log
+results$individual_plots$popularite
+results$individual_plots$detectabilite
+results$individual_plots$fauneFrance
+results$individual_plots$pourcentage_stoc
+results$individual_plots$sexe
+results$individual_plots$anciennete
+results$individual_plots$expert
+
+# Afficher le graphique combiné
+# results$combined_plot
+```
+
+**Interprétation**
+
+**1**. Modèle Abondance (log)
+
+Ce que montrent les prédictions
+
+Quand l’abondance augmente :
+
+La probabilité de Déclin diminue
+
+La probabilité de Stable augmente légèrement
+
+La probabilité d’Augmentation augmente clairement
+
+Effet progressif et monotone, surtout visible pour Déclin et Augmentation
+
+👉 Les espèces/sites plus abondants ont une probabilité plus élevée d’être associés à une tendance SHOC positive, et moins souvent à un déclin.
+
+**2**. Modèle Popularité
+
+Ce que montrent les prédictions
+
+Les espèces populaires :
+
+Ont une probabilité plus élevée d’Augmentation
+
+Ont une probabilité plus faible de Déclin
+
+Effet modéré mais net
+
+Peu de changement pour la catégorie Stable
+
+👉 La popularité est associée à une meilleure détection ou un suivi plus favorable, conduisant à des tendances SHOC plus positives.
+
+**3**. Modèle Détectabilité
+
+Ce que montrent les prédictions
+
+Une forte détectabilité :
+
+Réduit la probabilité de Déclin
+
+Augmente fortement la probabilité d’Augmentation
+
+Effet très marqué et cohérent
+
+Peu d’effet sur Stable
+
+👉 Les espèces mieux détectables sont plus souvent associées à des tendances positives, probablement via une meilleure estimation ou un biais de détection.
+
+**4**. Modèle Faune France
+
+Ce que montrent les prédictions
+
+Effet fortement non linéaire
+
+Pour Déclin :
+
+Forte probabilité à faibles valeurs
+
+Chute rapide ensuite
+
+Pour Stable :
+
+Pic à des valeurs intermédiaires
+
+Pour Augmentation :
+
+Forte augmentation aux valeurs élevées
+
+👉 Faune de France agit comme un gradient structurant, avec :
+
+Déclin dominant à faibles niveaux
+
+Stabilité à niveaux intermédiaires
+
+Augmentation à niveaux élevés
+
+**5**. Modèle Pourcentage STOC
+
+Ce que montrent les prédictions
+
+Structure quasi identique à Faune de France :
+
+Déclin dominant à faible pourcentage
+
+Stable à valeurs intermédiaires
+
+Augmentation à fort pourcentage
+
+Effets très marqués et lisibles
+
+👉 Une plus forte intégration au STOC est associée à des tendances SHOC plus favorables, avec une zone de transition intermédiaire.
+
+**6**. Modèle Sexe
+
+Ce que montrent les prédictions
+
+Différences faibles entre F et H
+
+Légère augmentation de la probabilité d’Augmentation chez H
+
+Effets quasi parallèles
+
+👉 Le sexe a un effet marginal, sans modifier fortement la distribution des catégories SHOC.
+
+**7**. Modèle Ancienneté
+
+Ce que montrent les prédictions
+
+Quand l’ancienneté augmente :
+
+Probabilité de Déclin augmente
+
+Probabilité de Stable diminue
+
+Probabilité d’Augmentation augmente légèrement
+
+Effet progressif mais réel
+
+👉 L’ancienneté modifie la structure des probabilités, avec un déplacement depuis la stabilité vers les catégories extrêmes.
+
+**8**. Modèle Expert
+
+Ce que montrent les prédictions
+
+Différences très faibles entre Non et Oui
+
+Légère hausse d’Augmentation chez les experts
+
+Catégorie Stable quasi inchangée
+
+👉 Le statut d’expert n’influence que marginalement la tendance SHOC.
+
+**Conclusion générale**
+
+✔ Les prédictions sont entièrement cohérentes avec les coefficients
+
+✔ Les modèles à effets non linéaires (FauneFrance, STOC) sont les plus informatifs
+
+✔ Les variables observationnelles (détectabilité, popularité) ont des effets clairs
+
+✔ Les variables individuelles (sexe, expert) jouent un rôle secondaire
+
+### probabilité cumulative (d'être dans une catégorie supérieure)
 
 ```{r}
 #| echo: false
 #| fig-height: 15
 #| fig-width: 10
 
-# dt1 <- dt1 %>%
-#   mutate(
-#     popularite    = factor(popularite),
-#     detectabilite = factor(detectabilite),
-#     sexe = factor(sexe),
-#     expert = factor(expert)
-#   )
-
 # fonction ---------------------------------------------------------------------
-
-# plot_clmm_predictions_multi_x <- function(
-#   models,
-#   x_values,
-#   subtitle = NULL
-# ) {
-# 
-#   emm_all <- purrr::imap_dfr(
-#     models,
-#     function(model, x_var) {
-#       mf <- model.frame(model)
-#       if (!x_var %in% names(mf)) {
-#         stop(sprintf("La variable '%s' n'est pas dans le modèle.", x_var))
-#       }
-#       x_is_factor <- is.factor(mf[[x_var]])
-#       x_vals <- x_values[[x_var]]
-#       emm <- if (x_is_factor) {
-#         emmeans(
-#           model,
-#           as.formula(paste("~ tendance_shoc_niv1 |", x_var)),
-#           mode = "latent"
-#         )
-#       } else {
-#         emmeans(
-#           model,
-#           as.formula(paste("~ tendance_shoc_niv1 |", x_var)),
-#           at = setNames(list(x_vals), x_var),
-#           mode = "latent"
-#         )
-#       }
-#       summary(emm, type = "response") %>%
-#         mutate(
-#           probabilite = plogis(emmean),
-#           tendance = tendance_shoc_niv1,
-#           x_level = factor(.data[[x_var]]),
-#           variable = x_var
-#         )
-#     }
-#   )
-# 
-#   # Créer un graphique par variable
-#   plots <- split(emm_all, emm_all$variable) %>%
-#     imap(~ {
-#       ggplot(.x, aes(
-#         x = tendance,
-#         y = probabilite,
-#         color = x_level,
-#         group = x_level
-#       )) +
-#         geom_line(linewidth = 1.2) +
-#         geom_point(size = 2) +
-#         scale_y_continuous(labels = scales::percent, limits = c(0, 1)) +
-#         theme_bw() +
-#         theme(
-#           axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
-#           legend.position = "bottom"
-#         ) +
-#         labs(
-#           x = "Tendance SHOC",
-#           y = "Probabilité prédite",
-#           color = "Niveau",
-#           title = .y
-#         )
-#     })
-# 
-#   # Combiner les graphiques avec patchwork
-#   wrap_plots(plots, ncol = 3, nrow = 4) +
-#     plot_annotation(subtitle = subtitle) &
-#     theme(legend.position = "top")
-# }
-
-# ruban error
-
-# plot_clmm_predictions_multi_x <- function(
-#   models,
-#   x_values,
-#   subtitle = NULL
-# ) {
-# 
-#   emm_all <- purrr::imap_dfr(
-#     models,
-#     function(model, x_var) {
-#       mf <- model.frame(model)
-#       if (!x_var %in% names(mf)) {
-#         stop(sprintf("La variable '%s' n'est pas dans le modèle.", x_var))
-#       }
-#       x_is_factor <- is.factor(mf[[x_var]])
-#       x_vals <- x_values[[x_var]]
-#       emm <- if (x_is_factor) {
-#         emmeans(
-#           model,
-#           as.formula(paste("~ tendance_shoc_niv1 |", x_var)),
-#           mode = "latent"
-#         )
-#       } else {
-#         emmeans(
-#           model,
-#           as.formula(paste("~ tendance_shoc_niv1 |", x_var)),
-#           at = setNames(list(x_vals), x_var),
-#           mode = "latent"
-#         )
-#       }
-#       emm_summary <- summary(emm, type = "response")
-#       emm_summary %>%
-#         mutate(
-#           probabilite = plogis(emmean),
-#           tendance = tendance_shoc_niv1,
-#           x_level = factor(.data[[x_var]]),
-#           variable = x_var,
-#           lower = plogis(asymp.LCL),
-#           upper = plogis(asymp.UCL)
-#         )
-#     }
-#   )
-# 
-#   # Créer un graphique par variable
-#   plots <- split(emm_all, emm_all$variable) %>%
-#     imap(~ {
-#       p <- ggplot(.x, aes(
-#         x = tendance,
-#         y = probabilite,
-#         color = x_level,
-#         fill = x_level,
-#         group = x_level
-#       )) +
-#         # Ruban d'erreur
-#         geom_ribbon(
-#           aes(ymin = lower, ymax = upper),
-#           alpha = 0.2,
-#           color = NA
-#         ) +
-#         # Points (toujours affichés)
-#         geom_point(size = 2) +
-#         # Ligne (seulement si plusieurs valeurs de tendance par x_level)
-#         geom_line(linewidth = 1.2, data = function(d) {
-#           d[!ave(d$tendance, d$x_level, FUN = function(x) length(x) < 2), ]
-#         }) +
-#         scale_y_continuous(labels = scales::percent, limits = c(0, 1)) +
-#         scale_fill_manual(values = scales::hue_pal()(length(unique(.x$x_level))), aesthetics = "fill") +
-#         scale_color_manual(values = scales::hue_pal()(length(unique(.x$x_level))), aesthetics = "color") +
-#         theme_bw() +
-#         theme(
-#           axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
-#           legend.position = "bottom"
-#         ) +
-#         labs(
-#           x = "Tendance SHOC",
-#           y = "Probabilité prédite",
-#           color = "Niveau",
-#           fill = "Niveau",
-#           title = .y
-#         )
-#       p
-#     })
-# 
-#   # Combiner les graphiques avec patchwork
-#   wrap_plots(plots, ncol = 3, nrow = 4) +
-#     plot_annotation(subtitle = subtitle) &
-#     theme(legend.position = "top")
-# }
-
-# ruban en ligne 
-
-# plot_clmm_predictions_multi_x <- function(
-#   models,
-#   x_values,
-#   subtitle = NULL
-# ) {
-#   emm_all <- purrr::imap_dfr(
-#     models,
-#     function(model, x_var) {
-#       mf <- model.frame(model)
-#       if (!x_var %in% names(mf)) {
-#         stop(sprintf("La variable '%s' n'est pas dans le modèle.", x_var))
-#       }
-#       x_is_factor <- is.factor(mf[[x_var]])
-#       x_vals <- x_values[[x_var]]
-#       emm <- if (x_is_factor) {
-#         emmeans(
-#           model,
-#           as.formula(paste("~ tendance_shoc_niv1 |", x_var)),
-#           mode = "latent"
-#         )
-#       } else {
-#         emmeans(
-#           model,
-#           as.formula(paste("~ tendance_shoc_niv1 |", x_var)),
-#           at = setNames(list(x_vals), x_var),
-#           mode = "latent"
-#         )
-#       }
-#       emm_summary <- summary(emm, type = "response")
-#       emm_summary %>%
-#         mutate(
-#           probabilite = plogis(emmean),
-#           tendance = tendance_shoc_niv1,
-#           x_level = factor(.data[[x_var]]),
-#           variable = x_var,
-#           lower = plogis(asymp.LCL),
-#           upper = plogis(asymp.UCL)
-#         )
-#     }
-#   )
-# 
-#   # Créer un graphique par variable
-#   plots <- split(emm_all, emm_all$variable) %>%
-#     imap(~ {
-#       p <- ggplot(.x, aes(
-#         x = tendance,
-#         y = probabilite,
-#         color = x_level,
-#         fill = x_level,
-#         group = x_level
-#       )) +
-#         # Ruban d'erreur
-#         geom_ribbon(
-#           aes(ymin = lower, ymax = upper),
-#           alpha = 0.2,
-#           color = NA
-#         ) +
-#         # Lignes continues pour chaque niveau de x_level
-#         geom_line(linewidth = 1.2) +
-#         scale_y_continuous(labels = scales::percent, limits = c(0, 1)) +
-#         scale_fill_manual(values = scales::hue_pal()(length(unique(.x$x_level))), aesthetics = "fill") +
-#         scale_color_manual(values = scales::hue_pal()(length(unique(.x$x_level))), aesthetics = "color") +
-#         theme_bw() +
-#         theme(
-#           axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
-#           legend.position = "bottom"
-#         ) +
-#         labs(
-#           x = "Tendance SHOC",
-#           y = "Probabilité prédite",
-#           color = "",
-#           fill = "",
-#           title = .y
-#         )
-#       p
-#     })
-# 
-#   # Combiner les graphiques avec patchwork
-#   wrap_plots(plots, ncol = 3, nrow = 4) +
-#     plot_annotation(subtitle = subtitle) &
-#     theme(legend.position = "top")
-# }
-
-# p-value 
 
 plot_clmm_predictions_multi_x <- function(
   models,
@@ -1770,832 +2243,12 @@ x_values <- list(
 plot_clmm_predictions_multi_x(
   models = models,
   x_values = x_values,
-  subtitle = "Proabilité cumulative d'être dans une des catégories supérieures (niveau 1)"
+  subtitle = "Probabilité cumulative d'être dans une des catégories supérieures"
 )
 
 ```
 
-### plot (response)
-
-```{r}
-#| eval: false
-#| fig-height: 15
-#| fig-width: 10
-#| include: false
-
-
-# p-value 
-
-plot_clmm_predictions_multi_x <- function(
-  models,
-  x_values,
-  subtitle = NULL
-) {
-  emm_all <- purrr::imap_dfr(
-    models,
-    function(model, x_var) {
-      mf <- model.frame(model)
-      if (!x_var %in% names(mf)) {
-        stop(sprintf("La variable '%s' n'est pas dans le modèle.", x_var))
-      }
-      x_is_factor <- is.factor(mf[[x_var]])
-      x_vals <- x_values[[x_var]]
-      
-emm <- if (x_is_factor) {
-  emmeans(
-    model,
-    as.formula(paste("~ tendance_shoc_niv1 |", x_var)),
-    mode = "prob"
-  )
-} else {
-  emmeans(
-    model,
-    as.formula(paste("~ tendance_shoc_niv1 |", x_var)),
-    at = setNames(list(x_vals), x_var),
-    mode = "prob"
-  )
-}
-
-# Extraire prob + IC
-emm_summary <- as.data.frame(confint(emm))
-
-# Ajouter la colonne catégorie et covariables
-categories <- levels(dt1$avis_niv1)  # ou unique() si non-facteur
-emm_summary <- emm_summary %>%
-  mutate(
-    probabilite = prob,           # normalement la colonne issue de confint()
-    lower = asymp.LCL,
-    upper = asymp.UCL,
-    categorie = factor(rep(categories, length.out = n())),
-    tendance = tendance_shoc_niv1,
-    x_level = factor(.data[[x_var]]),
-    variable = x_var,
-    significatif = !(asymp.LCL < 0 & asymp.UCL > 0)
-
-  )
-
-
-
-
-          # probabilite = plogis(emmean),
-          # tendance = tendance_shoc_niv1,
-          # x_level = factor(.data[[x_var]]),
-          # variable = x_var,
-          # lower = plogis(asymp.LCL),
-          # upper = plogis(asymp.UCL),
-          # # Logique pour la significativité (exemple : si l'intervalle de confiance contient 0)
-          # significatif = !(asymp.LCL < 0 & asymp.UCL > 0)
-        
-    }
-  )
-
-  # Créer un graphique par variable
-  plots <- split(emm_all, emm_all$variable) %>%
-    imap(~ {
-      # Déterminer si toutes les interactions pour ce niveau sont non significatives
-      all_non_significatif <- all(!.x$significatif)
-
-      p <- ggplot(.x, aes(
-        x = tendance,
-        y = probabilite,
-        color = x_level,
-        group = x_level
-      )) +
-        # Ruban d'erreur
-        geom_ribbon(
-          aes(ymin = lower, ymax = upper, fill = x_level),
-          alpha = 0.2,
-          color = NA
-        ) +
-        # Lignes continues ou pointillées (selon la significativité globale)
-        geom_line(
-          aes(linetype = ifelse(all_non_significatif, "dashed", "solid")),
-          linewidth = 1.2
-        ) +
-        scale_linetype_manual(values = c("solid" = "solid", "dashed" = "dashed")) +
-        # scale_y_continuous(labels = scales::percent, limits = c(0, 1)) +
-        scale_fill_manual(values = scales::hue_pal()(length(unique(.x$x_level))), aesthetics = "fill") +
-        scale_color_manual(values = scales::hue_pal()(length(unique(.x$x_level))), aesthetics = "color") +
-        theme_bw() +
-        theme(
-          axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1),
-          legend.position = "bottom"
-        ) +
-        labs(
-          x = "Tendance SHOC",
-          y = "Probabilité prédite",
-          color = "",
-          fill = "",
-          linetype = ifelse(all_non_significatif, "Non significatif", "Significatif"),
-          title = .y
-        )
-      p
-    })
-
-  # Combiner les graphiques avec patchwork
-  wrap_plots(plots, ncol = 3, nrow = 4) +
-    plot_annotation(subtitle = subtitle) &
-    theme(legend.position = "top")
-}
-
-# plot -------------------------------------------------------------------------
-
-models <- list(
-  abondance_log    = m_n1_trait_1int,
-  popularite       = m_n1_trait_2int,
-  detectabilite    = m_n1_trait_3int,
-  # regime           = m_n1_trait_4int,
-  # migrateur        = m_n1_trait_5int,
-  # gregaire         = m_n1_trait_6int
-  fauneFrance      = m_n1_trait_7int,
-  pourcentage_stoc = m_n1_trait_8int,
-  sexe             = m_n1_participant_1int,
-  anciennete       = m_n1_participant_2int,
-  expert           = m_n1_participant_3int
-)
-
-x_values <- list(
-  abondance_log    = c(10, 13, 16),
-  popularite       = NULL,
-  detectabilite    = NULL,
-  # regime           = NULL,
-  # migrateur        = NULL,
-  # gregaire         = NULL
-  fauneFrance      = c(-1, 0, 2.5),
-  pourcentage_stoc = c(-1, 0, 1.5),
-  sexe = NULL,
-  anciennete = c(0, 5, 40),
-  expert = NULL
-)
-
-plot_clmm_predictions_multi_x(
-  models = models,
-  x_values = x_values,
-  subtitle = "Probabilité pour chaque catégorie (niveau 1)"
-)
-
-```
-
-### 2 plot (response)
-
-```{r}
-#| eval: false
-#| fig-height: 15
-#| fig-width: 10
-#| include: false
-
-
-# p-value 
-
-plot_clmm_predictions_multi_x <- function(
-  models,
-  x_values,
-  subtitle = NULL
-) {
-  emm_all <- purrr::imap_dfr(
-    models,
-    function(model, x_var) {
-      mf <- model.frame(model)
-      if (!x_var %in% names(mf)) {
-        stop(sprintf("La variable '%s' n'est pas dans le modèle.", x_var))
-      }
-      x_is_factor <- is.factor(mf[[x_var]])
-      x_vals <- x_values[[x_var]]
-      
-emm <- if (x_is_factor) {
-  emmeans(
-    model,
-    as.formula(paste("~ tendance_shoc_niv1 |", x_var)),
-    mode = "prob"
-  )
-} else {
-  emmeans(
-    model,
-    as.formula(paste("~ tendance_shoc_niv1 |", x_var)),
-    at = setNames(list(x_vals), x_var),
-    mode = "prob"
-  )
-}
-
-# Extraire prob + IC
-emm_summary <- as.data.frame(confint(emm))
-
-# Ajouter la colonne catégorie et covariables
-categories <- levels(dt1$avis_niv1)  # ou unique() si non-facteur
-emm_df <- as.data.frame(emm)              # contient emmean et autres colonnes
-emm_ci <- as.data.frame(confint(emm))     # contient asymp.LCL / asymp.UCL
-
-emm_summary <- as.data.frame(emm, type = "response") %>%
-  rename(probabilite = prob) %>%   # ou response selon la version
-  mutate(
-    tendance = tendance_shoc_niv1,  # <- créer explicitement tendance
-    categorie = factor(tendance_shoc_niv1),
-    x_level = factor(.data[[x_var]]),
-    variable = x_var,
-    significatif = !(asymp.LCL < 0 & asymp.UCL > 0)
-
-  )
-
-
-# emm_summary <- emm_df %>%
-#   bind_cols(emm_ci %>% select(asymp.LCL, asymp.UCL)) %>%
-#   mutate(
-#     probabilite = plogis(emmean),          # logits -> probabilité
-#     lower = plogis(asymp.LCL),
-#     upper = plogis(asymp.UCL),
-#     categorie = factor(tendance_shoc_niv1),
-#     tendance = tendance_shoc_niv1,
-#     x_level = factor(.data[[x_var]]),
-#     variable = x_var,
-#     significatif = !(asymp.LCL < 0 & asymp.UCL > 0)
-#   )
-
-
-
-
-
-
-          # probabilite = plogis(emmean),
-          # tendance = tendance_shoc_niv1,
-          # x_level = factor(.data[[x_var]]),
-          # variable = x_var,
-          # lower = plogis(asymp.LCL),
-          # upper = plogis(asymp.UCL),
-          # # Logique pour la significativité (exemple : si l'intervalle de confiance contient 0)
-          # significatif = !(asymp.LCL < 0 & asymp.UCL > 0)
-        
-    }
-  )
-
-  # Créer un graphique par variable
-  plots <- split(emm_all, emm_all$variable) %>%
-    imap(~ {
-      # Déterminer si toutes les interactions pour ce niveau sont non significatives
-      all_non_significatif <- all(!.x$significatif)
-
-      p <- ggplot(.x, aes(
-        x = tendance,
-        y = probabilite,
-        color = x_level,
-        group = x_level
-      )) +
-        # Ruban d'erreur
-        # geom_ribbon(
-        #   aes(ymin = lower, ymax = upper, fill = x_level),
-        #   alpha = 0.2,
-        #   color = NA
-        # ) +
-        # Lignes continues ou pointillées (selon la significativité globale)
-        geom_line(
-          aes(linetype = ifelse(all_non_significatif, "dashed", "solid")),
-          linewidth = 1.2
-        ) +
-        scale_linetype_manual(values = c("solid" = "solid", "dashed" = "dashed")) +
-        # scale_y_continuous(labels = scales::percent, limits = c(0, 1)) +
-        scale_fill_manual(values = scales::hue_pal()(length(unique(.x$x_level))), aesthetics = "fill") +
-        scale_color_manual(values = scales::hue_pal()(length(unique(.x$x_level))), aesthetics = "color") +
-        theme_bw() +
-        theme(
-          axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1),
-          legend.position = "bottom"
-        ) +
-        labs(
-          x = "Tendance SHOC",
-          y = "Probabilité prédite",
-          color = "",
-          fill = "",
-          linetype = ifelse(all_non_significatif, "Non significatif", "Significatif"),
-          title = .y
-        )
-      p
-    })
-
-  # Combiner les graphiques avec patchwork
-  wrap_plots(plots, ncol = 3, nrow = 4) +
-    plot_annotation(subtitle = subtitle) &
-    theme(legend.position = "top")
-}
-
-# plot -------------------------------------------------------------------------
-
-models <- list(
-  abondance_log    = m_n1_trait_1int,
-  popularite       = m_n1_trait_2int,
-  detectabilite    = m_n1_trait_3int,
-  # regime           = m_n1_trait_4int,
-  # migrateur        = m_n1_trait_5int,
-  # gregaire         = m_n1_trait_6int
-  fauneFrance      = m_n1_trait_7int,
-  pourcentage_stoc = m_n1_trait_8int,
-  sexe             = m_n1_participant_1int,
-  anciennete       = m_n1_participant_2int,
-  expert           = m_n1_participant_3int
-)
-
-x_values <- list(
-  abondance_log    = c(10, 13, 16),
-  popularite       = NULL,
-  detectabilite    = NULL,
-  # regime           = NULL,
-  # migrateur        = NULL,
-  # gregaire         = NULL
-  fauneFrance      = c(-1, 0, 2.5),
-  pourcentage_stoc = c(-1, 0, 1.5),
-  sexe = NULL,
-  anciennete = c(0, 5, 40),
-  expert = NULL
-)
-
-plot_clmm_predictions_multi_x(
-  models = models,
-  x_values = x_values,
-  subtitle = "Probabilité pour chaque catégorie (niveau 1)"
-)
-
-```
-
-
-### 3 plot (response)
-
-```{r}
-#| eval: false
-#| fig-height: 15
-#| fig-width: 10
-#| include: false
-
-
-predict_clmm_multi <- function(
-  models,
-  x_values,
-  response_levels,
-  n_boot = 500,
-  seed = 123
-) {
-
-  library(dplyr)
-  library(tidyr)
-  library(purrr)
-
-  set.seed(seed)
-
-  # =========================
-  # fonctions internes
-  # =========================
-
-  make_newdata <- function(model, x_var, x_vals) {
-    mf <- model.frame(model)
-    nd <- mf[rep(1, length(x_vals)), , drop = FALSE]
-    nd[[x_var]] <- x_vals
-    nd
-  }
-
-  predict_prob <- function(model, newdata) {
-    p <- predict(model, newdata = newdata, type = "prob")
-    as.data.frame(p)
-  }
-
-  # =========================
-  # prédictions + bootstrap
-  # =========================
-
-  results <- imap_dfr(
-    models,
-    function(model, x_var) {
-
-      x_vals <- x_values[[x_var]]
-      if (is.null(x_vals)) stop(paste("x_values manquant pour", x_var))
-
-      nd <- make_newdata(model, x_var, x_vals)
-
-      # prédiction point
-      p_hat <- predict_prob(model, nd)
-
-      base <- p_hat %>%
-        mutate(x_level = rep(x_vals, each = length(response_levels))) %>%
-        pivot_longer(
-          cols = everything(),
-          names_to = "categorie",
-          values_to = "probabilite"
-        )
-
-      # bootstrap
-      boot_mat <- replicate(n_boot, {
-        b <- sample(seq_len(nrow(model$frame)), replace = TRUE)
-        mod_b <- suppressWarnings(update(model, data = model$frame[b, ]))
-        predict_prob(mod_b, nd)
-      }, simplify = FALSE)
-
-      boot_df <- bind_rows(boot_mat, .id = "boot") %>%
-        mutate(x_level = rep(x_vals, times = n_boot, each = length(response_levels))) %>%
-        pivot_longer(
-          cols = -c(boot, x_level),
-          names_to = "categorie",
-          values_to = "prob"
-        )
-
-      ci <- boot_df %>%
-        group_by(x_level, categorie) %>%
-        summarise(
-          lower = quantile(prob, 0.025),
-          upper = quantile(prob, 0.975),
-          .groups = "drop"
-        )
-
-      base %>%
-        left_join(ci, by = c("x_level", "categorie")) %>%
-        mutate(
-          variable = x_var
-        )
-    }
-  )
-
-  results
-}
-
-plot_clmm_probs <- function(pred_df) {
-
-  library(ggplot2)
-
-  ggplot(
-    pred_df,
-    aes(
-      x = x_level,
-      y = probabilite,
-      group = categorie,
-      color = categorie
-    )
-  ) +
-    geom_ribbon(
-      aes(ymin = lower, ymax = upper, fill = categorie),
-      alpha = 0.2,
-      color = NA
-    ) +
-    geom_line(linewidth = 1.1) +
-    geom_point(size = 2) +
-    facet_grid(
-      categorie ~ variable,
-      scales = "free_x"
-    ) +
-    scale_y_continuous(
-      labels = scales::percent,
-      limits = c(0, 1)
-    ) +
-    theme_bw() +
-    theme(
-      legend.position = "none",
-      axis.text.x = element_text(angle = 45, hjust = 1)
-    ) +
-    labs(
-      x = "Valeur du prédicteur",
-      y = "Probabilité prédite"
-    )
-}
-
-contrast_probabilities <- function(pred_df, ref_level) {
-
-  pred_df %>%
-    group_by(variable, categorie) %>%
-    mutate(
-      ref_prob = probabilite[x_level == ref_level],
-      ref_lower = lower[x_level == ref_level],
-      ref_upper = upper[x_level == ref_level]
-    ) %>%
-    ungroup() %>%
-    filter(x_level != ref_level) %>%
-    mutate(
-      diff = probabilite - ref_prob,
-      diff_lower = lower - ref_upper,
-      diff_upper = upper - ref_lower,
-      significatif = !(diff_lower < 0 & diff_upper > 0)
-    )
-}
-
-make_publication_table <- function(pred_df) {
-
-  pred_df %>%
-    mutate(
-      estimate = sprintf(
-        "%.2f [%.2f ; %.2f]",
-        probabilite * 100,
-        lower * 100,
-        upper * 100
-      )
-    ) %>%
-    select(
-      variable,
-      categorie,
-      x_level,
-      estimate
-    ) %>%
-    pivot_wider(
-      names_from = x_level,
-      values_from = estimate
-    ) %>%
-    arrange(variable, categorie)
-}
-
-models <- list(
-  abondance_log    = m_n1_trait_1int,
-  popularite       = m_n1_trait_2int,
-  detectabilite    = m_n1_trait_3int,
-  # regime           = m_n1_trait_4int,
-  # migrateur        = m_n1_trait_5int,
-  # gregaire         = m_n1_trait_6int
-  fauneFrance      = m_n1_trait_7int,
-  pourcentage_stoc = m_n1_trait_8int,
-  sexe             = m_n1_participant_1int,
-  anciennete       = m_n1_participant_2int,
-  expert           = m_n1_participant_3int
-)
-
-x_values <- list(
-  abondance_log    = c(10, 13, 16),
-  popularite       = NULL,
-  detectabilite    = NULL,
-  # regime           = NULL,
-  # migrateur        = NULL,
-  # gregaire         = NULL
-  fauneFrance      = c(-1, 0, 2.5),
-  pourcentage_stoc = c(-1, 0, 1.5),
-  sexe = NULL,
-  anciennete = c(0, 5, 40),
-  expert = NULL
-)
-
-pred <- predict_clmm_multi(
-  models = models,
-  x_values = x_values,
-  response_levels = levels(dt1$avis_niv1),
-  n_boot = 500
-)
-
-plot_clmm_probs(pred)
-
-table_pub <- make_publication_table(pred)
-table_pub
-
-
-
-```
-
-### espece + participant
-
-```{r}
-#| eval: false
-#| include: false
-
-# m_n1_trait_participant_allint <- clmm(avis_niv1 ~ tendance_shoc_niv1 + 
-#                     abondance_log + regime + popularite + detectabilite + migrateur + gregaire + fauneFrance + pourcentage_stoc + 
-#                       sexe + anciennete + expert +
-                    # tendance_shoc_niv1:(abondance_log + popularite + detectabilite + regime + migrateur + gregaire + sexe + anciennete + expert + fauneFrance + pourcentage_stoc) + (1 | email), data = dt1, link = "logit", Hess = TRUE)
-# m_n1_trait_participant_allint_1 <- clmm(avis_niv1 ~ tendance_shoc_niv1 +
-#                     abondance_log + regime + popularite + detectabilite + migrateur + gregaire + fauneFrance + pourcentage_stoc +
-#                       sexe + anciennete + expert +
-#                     tendance_shoc_niv1:(abondance_log + popularite + detectabilite + regime + migrateur + gregaire) + (1 | email),
-#                     data = dt1, link = "logit", Hess = TRUE)
-# m_n1_trait_participant_allint_2 <- clmm(avis_niv1 ~ tendance_shoc_niv1 + 
-#                     abondance_log + regime + popularite + detectabilite + migrateur + gregaire + fauneFrance + pourcentage_stoc + 
-#                       sexe + anciennete + expert +
-#                     tendance_shoc_niv1:(abondance_log + popularite + detectabilite + regime + migrateur + gregaire + sexe) + (1 | email), 
-#                     data = dt1, link = "logit", Hess = TRUE)
-# 
-# m_n1_trait_participant_allint_3 <- clmm(avis_niv1 ~ tendance_shoc_niv1 + 
-#                     abondance_log + regime + popularite + detectabilite + migrateur + gregaire + fauneFrance + pourcentage_stoc + 
-#                       sexe + anciennete + expert +
-#                     tendance_shoc_niv1:(abondance_log + popularite + detectabilite + regime + migrateur + gregaire + sexe + anciennete) + (1 | email), 
-#                     data = dt1, link = "logit", Hess = TRUE)
-# m_n1_trait_participant_allint_4 <- clmm(avis_niv1 ~ tendance_shoc_niv1 + 
-#                     abondance_log + regime + popularite + detectabilite + migrateur + gregaire + fauneFrance + pourcentage_stoc + 
-#                       sexe + anciennete + expert +
-#                     tendance_shoc_niv1:(abondance_log + popularite + detectabilite + regime + migrateur + gregaire + sexe + expert) + (1 | email), 
-#                     data = dt1, link = "logit", Hess = TRUE)
-m_n1_trait_participant_allint_5 <- clmm(avis_niv1 ~ tendance_shoc_niv1 + 
-                    abondance_log + regime + popularite + detectabilite + migrateur + gregaire + fauneFrance + pourcentage_stoc + 
-                      sexe + anciennete + expert +
-                    tendance_shoc_niv1:(sexe + anciennete + expert) + (1 | email), data = dt1, link = "logit", Hess = TRUE)
-m_n1_trait_participant_allint_6 <- clmm(avis_niv1 ~ tendance_shoc_niv1 + 
-                    abondance_log + regime + popularite + detectabilite + migrateur + gregaire + fauneFrance + pourcentage_stoc + 
-                      sexe + anciennete + expert +
-                    tendance_shoc_niv1:(sexe + anciennete + expert + fauneFrance + pourcentage_stoc) + (1 | email), 
-                    data = dt1, link = "logit", Hess = TRUE)
-m_n1_trait_participant_allint_7 <- clmm(avis_niv1 ~ tendance_shoc_niv1 + 
-                    abondance_log + regime + popularite + detectabilite + migrateur + gregaire + fauneFrance + pourcentage_stoc + 
-                      sexe + anciennete + expert + tendance_shoc_niv1:(sexe + anciennete + expert) + 
-                      (1 | email), data = dt1, link = "logit", Hess = TRUE)
-m_n1_trait_participant_allint_8 <- clmm(avis_niv1 ~ tendance_shoc_niv1 + 
-                    abondance_log + regime + popularite + detectabilite + migrateur + gregaire + fauneFrance + pourcentage_stoc + 
-                      sexe + anciennete + expert + tendance_shoc_niv1:(sexe + anciennete + expert + fauneFrance) + 
-                      (1 | email), data = dt1, link = "logit", Hess = TRUE)
-m_n1_trait_participant_allint_9 <- clmm(avis_niv1 ~ tendance_shoc_niv1 + 
-                    abondance_log + regime + popularite + detectabilite + migrateur + gregaire + fauneFrance + pourcentage_stoc + 
-                      sexe + anciennete + expert + tendance_shoc_niv1:(sexe + anciennete + expert + pourcentage_stoc) + 
-                      (1 | email), data = dt1, link = "logit", Hess = TRUE)
-
-
-m_n1_trait_participant_allint_10 <- clmm(avis_niv1 ~ tendance_shoc_niv1 + 
-                    abondance_log + regime + popularite + detectabilite + migrateur + gregaire + pourcentage_stoc + 
-                      sexe + anciennete + expert + 
-                    tendance_shoc_niv1:(abondance_log + popularite + detectabilite + pourcentage_stoc + 
-                                          sexe + anciennete + expert) + (1 | email), 
-                    data = dt1, link = "logit", Hess = TRUE)
-
-m_n1_trait_participant_allint_11 <- clmm(avis_niv1 ~ tendance_shoc_niv1 + 
-                    abondance_log + regime + popularite + detectabilite + migrateur + gregaire + pourcentage_stoc + 
-                      sexe + anciennete +  
-                    tendance_shoc_niv1:(abondance_log + popularite + detectabilite + pourcentage_stoc + 
-                                          sexe + anciennete) + (1 | email), 
-                    data = dt1, link = "logit", Hess = TRUE)
-
-m_n1_trait_participant_allint_12 <- clmm(avis_niv1 ~ tendance_shoc_niv1 + 
-                    abondance_log + regime + popularite + detectabilite + migrateur + gregaire + pourcentage_stoc + 
-                      sexe +  
-                    tendance_shoc_niv1:(abondance_log + popularite + detectabilite + pourcentage_stoc + 
-                                          sexe) + (1 | email), 
-                    data = dt1, link = "logit", Hess = TRUE)
-
-m_n1_trait_participant_allint_13 <- clmm(avis_niv1 ~ tendance_shoc_niv1 + 
-                    abondance_log + regime + popularite + detectabilite + migrateur + gregaire + pourcentage_stoc + 
-                      sexe + anciennete + expert + 
-                    tendance_shoc_niv1:(abondance_log + popularite + detectabilite + pourcentage_stoc + 
-                                          sexe + anciennete) + (1 | email), 
-                    data = dt1, link = "logit", Hess = TRUE)
-
-m_n1_trait_participant_allint_14 <- clmm(avis_niv1 ~ tendance_shoc_niv1 + 
-                    abondance_log + regime + popularite + detectabilite + migrateur + gregaire + pourcentage_stoc + 
-                      sexe + anciennete + expert + 
-                    tendance_shoc_niv1:(abondance_log + popularite + detectabilite + pourcentage_stoc + 
-                                          sexe + expert) + (1 | email), 
-                    data = dt1, link = "logit", Hess = TRUE)
-
-m_n1_trait_participant_allint_15 <- clmm(avis_niv1 ~ tendance_shoc_niv1 + 
-                    abondance_log + regime + popularite + detectabilite + migrateur + gregaire + pourcentage_stoc + 
-                      sexe + anciennete + expert + 
-                    tendance_shoc_niv1:(abondance_log + popularite + detectabilite + pourcentage_stoc + 
-                                          sexe) + (1 | email), 
-                    data = dt1, link = "logit", Hess = TRUE)
-
-m_n1_trait_participant_allint_16 <- clmm(avis_niv1 ~ tendance_shoc_niv1 + 
-                    abondance_log + regime + popularite + detectabilite + migrateur + gregaire + pourcentage_stoc + 
-                      sexe + anciennete + expert +
-                    tendance_shoc_niv1:(abondance_log + popularite + detectabilite + pourcentage_stoc + 
-                                          sexe + anciennete) + (1 | email), 
-                    data = dt1, link = "logit", Hess = TRUE)
-
-m_n1_trait_participant_allint_17 <- clmm(avis_niv1 ~ tendance_shoc_niv1 + 
-                    abondance_log + regime + popularite + detectabilite + migrateur + gregaire + pourcentage_stoc + 
-                      sexe +   
-                    tendance_shoc_niv1:(abondance_log + popularite + detectabilite + pourcentage_stoc + 
-                                          sexe) + (1 | email), 
-                    data = dt1, link = "logit", Hess = TRUE)
-
-
-# au propre 
-
-m_n1_0 <- clmm(
-  avis_niv1 ~ tendance_shoc_niv1 + abondance_log + regime + popularite + detectabilite + migrateur + gregaire + fauneFrance + pourcentage_stoc +
-    sexe + anciennete + expert +
-    (1 | email), data = dt1, link = "logit")
-
-m_n1_abondance_log <- clmm(
-  avis_niv1 ~ tendance_shoc_niv1 + abondance_log + regime + popularite + detectabilite + migrateur + gregaire + fauneFrance + pourcentage_stoc +
-    sexe + anciennete + expert +
-    tendance_shoc_niv1:(abondance_log) +
-    (1 | email), data = dt1, link = "logit")
-
-m_n1_popularite <- clmm(
-  avis_niv1 ~ tendance_shoc_niv1 + abondance_log + regime + popularite + detectabilite + migrateur + gregaire + fauneFrance + pourcentage_stoc +
-    sexe + anciennete + expert +
-    tendance_shoc_niv1:(popularite) +
-    (1 | email), data = dt1, link = "logit")
-
-m_n1_detectabilite <- clmm(
-  avis_niv1 ~ tendance_shoc_niv1 + abondance_log + regime + popularite + detectabilite + migrateur + gregaire + fauneFrance + pourcentage_stoc +
-    sexe + anciennete + expert +
-    tendance_shoc_niv1:(detectabilite) +
-    (1 | email), data = dt1, link = "logit")
-
-# m_n1_migrateur <- clmm(
-#   avis_niv1 ~ tendance_shoc_niv1 + abondance_log + regime + popularite + detectabilite + migrateur + gregaire + fauneFrance + pourcentage_stoc +
-#     sexe + anciennete + expert +
-#     tendance_shoc_niv1:(migrateur) +
-#     (1 | email), data = dt1, link = "logit")
-
-m_n1_gregaire <- clmm(
-  avis_niv1 ~ tendance_shoc_niv1 + abondance_log + regime +  popularite + detectabilite + migrateur + gregaire + fauneFrance + pourcentage_stoc +
-    sexe + anciennete + expert +
-    tendance_shoc_niv1:(gregaire) +
-    (1 | email), data = dt1, link = "logit")
-
-m_n1_fauneFrance <- clmm(
-  avis_niv1 ~ tendance_shoc_niv1 + abondance_log + regime + popularite + detectabilite + migrateur + gregaire + fauneFrance + pourcentage_stoc +
-    sexe + anciennete + expert +
-    tendance_shoc_niv1:(fauneFrance) +
-    (1 | email), data = dt1, link = "logit")
-
-m_n1_pourcentage_stoc <- clmm(
-  avis_niv1 ~ tendance_shoc_niv1 + abondance_log + regime + popularite + detectabilite + migrateur + gregaire + fauneFrance + pourcentage_stoc +
-    sexe + anciennete + expert +
-    tendance_shoc_niv1:(pourcentage_stoc) +
-    (1 | email), data = dt1, link = "logit")
-
-m_n1_sexe <- clmm(
-  avis_niv1 ~ tendance_shoc_niv1 + abondance_log + regime + popularite + detectabilite + migrateur + gregaire + fauneFrance + pourcentage_stoc +
-    sexe + anciennete + expert +
-    tendance_shoc_niv1:(sexe) +
-    (1 | email), data = dt1, link = "logit")
-
-m_n1_anciennete <- clmm(
-  avis_niv1 ~ tendance_shoc_niv1 + abondance_log + regime + popularite + detectabilite + migrateur + gregaire + fauneFrance + pourcentage_stoc +
-    sexe + anciennete + expert +
-    tendance_shoc_niv1:(anciennete) +
-    (1 | email), data = dt1, link = "logit")
-
-m_n1_expert <- clmm(
-  avis_niv1 ~ tendance_shoc_niv1 + abondance_log + regime + popularite + detectabilite + migrateur + gregaire + fauneFrance + pourcentage_stoc +
-    sexe + anciennete + expert +
-    tendance_shoc_niv1:(expert) +
-    (1 | email), data = dt1, link = "logit")
-
-
-
-
-
-m_n1_gregaire_abondance_log <- clmm(
-  avis_niv1 ~ tendance_shoc_niv1 + abondance_log + regime +  popularite + detectabilite + migrateur + gregaire + fauneFrance + pourcentage_stoc +
-    sexe + anciennete + expert +
-    tendance_shoc_niv1:(gregaire + abondance_log) +
-    (1 | email), data = dt1, link = "logit")
-
-m_n1_gregaire_popularite <- clmm(
-  avis_niv1 ~ tendance_shoc_niv1 + abondance_log + regime +  popularite + detectabilite + migrateur + gregaire + fauneFrance + pourcentage_stoc +
-    sexe + anciennete + expert +
-    tendance_shoc_niv1:(gregaire + popularite) +
-    (1 | email), data = dt1, link = "logit")
-
-m_n1_gregaire_detectabilite <- clmm(
-  avis_niv1 ~ tendance_shoc_niv1 + abondance_log + regime +  popularite + detectabilite + migrateur + gregaire + fauneFrance + pourcentage_stoc +
-    sexe + anciennete + expert +
-    tendance_shoc_niv1:(gregaire + detectabilite) +
-    (1 | email), data = dt1, link = "logit")
-
-# m_n1_gregaire_migrateur <- clmm(
-#   avis_niv1 ~ tendance_shoc_niv1 + abondance_log + regime +  popularite + detectabilite + migrateur + gregaire + fauneFrance + pourcentage_stoc +
-#     sexe + anciennete + expert +
-#     tendance_shoc_niv1:(gregaire + migrateur) +
-#     (1 | email), data = dt1, link = "logit")
-
-m_n1_gregaire_fauneFrance <- clmm(
-  avis_niv1 ~ tendance_shoc_niv1 + abondance_log + regime +  popularite + detectabilite + migrateur + gregaire + fauneFrance + pourcentage_stoc +
-    sexe + anciennete + expert +
-    tendance_shoc_niv1:(gregaire + fauneFrance) +
-    (1 | email), data = dt1, link = "logit")
-
-m_n1_gregaire_pourcentage_stoc <- clmm(
-  avis_niv1 ~ tendance_shoc_niv1 + abondance_log + regime +  popularite + detectabilite + migrateur + gregaire + fauneFrance + pourcentage_stoc +
-    sexe + anciennete + expert +
-    tendance_shoc_niv1:(gregaire + pourcentage_stoc) +
-    (1 | email), data = dt1, link = "logit")
-
-m_n1_gregaire_sexe <- clmm(
-  avis_niv1 ~ tendance_shoc_niv1 + abondance_log + regime +  popularite + detectabilite + migrateur + gregaire + fauneFrance + pourcentage_stoc +
-    sexe + anciennete + expert +
-    tendance_shoc_niv1:(gregaire + sexe) +
-    (1 | email), data = dt1, link = "logit")
-
-m_n1_gregaire_anciennete <- clmm(
-  avis_niv1 ~ tendance_shoc_niv1 + abondance_log + regime +  popularite + detectabilite + migrateur + gregaire + fauneFrance + pourcentage_stoc +
-    sexe + anciennete + expert +
-    tendance_shoc_niv1:(gregaire + anciennete) +
-    (1 | email), data = dt1, link = "logit")
-
-m_n1_gregaire_expert <- clmm(
-  avis_niv1 ~ tendance_shoc_niv1 + abondance_log + regime +  popularite + detectabilite + migrateur + gregaire + fauneFrance + pourcentage_stoc +
-    sexe + anciennete + expert +
-    tendance_shoc_niv1:(gregaire + expert) +
-    (1 | email), data = dt1, link = "logit")
-
-```
-
-```{r}
-#| echo: false
-AIC_dt_all_n1 <- as.data.frame(AIC(m_n1_base,
-                                   m_n1_trait_1, m_n1_trait_2, m_n1_trait_3, m_n1_trait_4, m_n1_trait_5, m_n1_trait_6,
-                                   m_n1_trait_1int, m_n1_trait_2int, m_n1_trait_3int, m_n1_trait_4int, m_n1_trait_5int, m_n1_trait_6int,
-                                   m_n1_trait_all, 
-                                   m_n1_trait_allint, 
-                                   m_n1_participant_1, m_n1_participant_2, m_n1_participant_3,
-                                   m_n1_participant_1int, m_n1_participant_2int, m_n1_participant_3int,
-                                   m_n1_participant_all, m_n1_participant_allint,
-                                   m_n1_0,m_n1_abondance_log,m_n1_popularite,m_n1_detectabilite,
-                                   # m_n1_migrateur,
-                                   m_n1_gregaire,m_n1_fauneFrance,
-                                   m_n1_pourcentage_stoc,m_n1_sexe,m_n1_anciennete,m_n1_expert))
-
-AIC_dt_all_n1 <- AIC_dt_all_n1 %>% 
-  arrange(AIC) ; AIC_dt_all_n1
-
-summary(m_n1_trait_participant_allint_11)
-```
+Interpétation difficile de ces graphiques.... prendre les autres...
 
 ```{r}
 #| echo: false
@@ -2605,964 +2258,16 @@ AIC_dt_all_n1 <- as.data.frame(AIC(m_n1_base,
                                    m_n1_trait_all, m_n1_trait_allint, 
                                    m_n1_participant_1, m_n1_participant_2, m_n1_participant_3,
                                    m_n1_participant_1int, m_n1_participant_2int, m_n1_participant_3int,
-                                   m_n1_participant_all, m_n1_participant_allint,
-                                   m_n1_trait_participant_allint_5, m_n1_trait_participant_allint_6,
-                                   m_n1_trait_participant_allint_7, m_n1_trait_participant_allint_8, m_n1_trait_participant_allint_9,
-                                   m_n1_trait_participant_allint_10, m_n1_trait_participant_allint_11, m_n1_trait_participant_allint_12,
-                                   m_n1_trait_participant_allint_13, m_n1_trait_participant_allint_14, m_n1_trait_participant_allint_15,
-                                   m_n1_trait_participant_allint_16, m_n1_trait_participant_allint_17))
+                                   m_n1_participant_all, m_n1_participant_allint))
 
 AIC_dt_all_n1 <- AIC_dt_all_n1 %>% 
   arrange(AIC) ; AIC_dt_all_n1
-
-summary(m_n1_trait_participant_allint_11)
-```
-
-```{r}
-#| fig-height: 7
-#| fig-width: 10
-
-# Récupération des coefficients, erreurs standards et p-values depuis le summary
-coefs <- summary(m_n1_trait_participant_allint_3)$coefficients
-coef_df <- data.frame(
-  Term = rownames(coefs),
-  Estimate = coefs[, "Estimate"],
-  Std.Error = coefs[, "Std. Error"],
-  p.value = coefs[, "Pr(>|z|)"]
-)
-
-# Filtrer les "Threshold coefficients" (lignes contenant "|")
-coef_df <- coef_df %>%
-  filter(!grepl("\\|", Term))
-
-# Ajout d'une colonne pour indiquer si le coefficient est significatif
-coef_df$significatif <- ifelse(coef_df$p.value < 0.05, "Oui", "Non")
-
-# Ajout d'une colonne pour distinguer les variables, tendances, interactions et interactions de type Q
-coef_df$Type <- case_when(
-  grepl("^tendance_shoc_niv1\\.[LQ]$", coef_df$Term) ~ "Tendance SHOC",
-  grepl("tendance_shoc_niv1\\.Q:", coef_df$Term) ~ "Interaction avec SHOC (quadratique)",
-  grepl(":", coef_df$Term) ~ "Interaction avec SHOC (linéaire)",
-  TRUE ~ "Variable"
-)
-
-# Nettoyage des noms de termes (optionnel)
-coef_df$Term <- gsub("tendance_shoc_niv1\\.", "tendance_shoc_niv1_", coef_df$Term)
-coef_df$Term <- gsub("\\:", "_", coef_df$Term)
-
-# Définir l'ordre des facettes
-coef_df$Type <- factor(coef_df$Type, levels = c("Tendance SHOC", "Variable", 
-                                                "Interaction avec SHOC (linéaire)", "Interaction avec SHOC (quadratique)"))
-
-coef_df$Term[coef_df$Term == "tendance_shoc_niv1_L"] <- "linéaire"
-coef_df$Term[coef_df$Term == "tendance_shoc_niv1_Q"] <- "quadratique"
-coef_df$Term[coef_df$Term == "abondance_log"] <- "Abondance"
-coef_df$Term[coef_df$Term == "regimeInsectivore"] <- "Regime (insectivore)"
-coef_df$Term[coef_df$Term == "regimeOmnivore"] <- "Regime (omnivore)"
-coef_df$Term[coef_df$Term == "populariteOui"] <- "Popularite (oui)"
-coef_df$Term[coef_df$Term == "populariteNon"] <- "Popularite (non)"
-coef_df$Term[coef_df$Term == "detectabiliteForte"] <- "Detectabilite (forte)"
-coef_df$Term[coef_df$Term == "migrateurOui"] <- "Migrateur (oui)"
-coef_df$Term[coef_df$Term == "migrateurPartiel"] <- "Migrateur (partiel)"
-coef_df$Term[coef_df$Term == "pourcentage_stoc"] <- " STOC"
-coef_df$Term[coef_df$Term == "gregaireOui"] <- "Gregaire (oui)"
-coef_df$Term[coef_df$Term == "fauneFrance"] <- "Faune-France"
-coef_df$Term[coef_df$Term == "sexeH"] <- "Sexe (homme)"
-coef_df$Term[coef_df$Term == "sexeF"] <- "Sexe (femme)"
-coef_df$Term[coef_df$Term == "anciennete"] <- "Anciennete"
-coef_df$Term[coef_df$Term == "expertOui"] <- "Expert (Oui)"
-coef_df$Term[coef_df$Term == "tendance_shoc_niv1_L_abondance_log"] <- ": Abondance"
-coef_df$Term[coef_df$Term == "tendance_shoc_niv1_Q_abondance_log"] <- ": Abondance"
-coef_df$Term[coef_df$Term == "tendance_shoc_niv1_L_populariteOui"] <- ": Popularité (oui)"
-coef_df$Term[coef_df$Term == "tendance_shoc_niv1_Q_populariteOui"] <- ": Popularité (oui)"
-coef_df$Term[coef_df$Term == "tendance_shoc_niv1_L_detectabiliteForte"] <- ": Détectabilité (forte)"
-coef_df$Term[coef_df$Term == "tendance_shoc_niv1_Q_detectabiliteForte"] <- ": Détectabilité (forte)"
-coef_df$Term[coef_df$Term == "tendance_shoc_niv1_L_regimeInsectivore"] <- ": Régime (insectivore)"
-coef_df$Term[coef_df$Term == "tendance_shoc_niv1_L_regimeOmnivore"] <- ": Régime (omnivore)"
-coef_df$Term[coef_df$Term == "tendance_shoc_niv1_L_migrateurPartiel"] <- ": Migrateur (partiel)"
-coef_df$Term[coef_df$Term == "tendance_shoc_niv1_L_sexeH"] <- ": Sexe (homme)"
-coef_df$Term[coef_df$Term == "tendance_shoc_niv1_Q_sexeH"] <- ": Sexe (homme)"
-coef_df$Term[coef_df$Term == "tendance_shoc_niv1_L_anciennete"] <- ": Ancienneté"
-coef_df$Term[coef_df$Term == "tendance_shoc_niv1_Q_anciennete"] <- ": Ancienneté"
-coef_df$Term[coef_df$Term == "tendance_shoc_niv1_Q_sexeH"] <- ": Ancienneté"
-
-# Trier les termes par ordre alphabétique dans chaque facette
-coef_df <- coef_df %>%
-  group_by(Type) %>%
-  mutate(Term = factor(Term, levels = sort(unique(Term)))) %>%
-  ungroup()
-
-# coef_df <- coef_df %>%
-#   group_by(Type) %>%
-#   arrange(Term) %>%
-#   ungroup()
-# 
-# coef_df <- coef_df %>%
-#   group_by(Type) %>%
-#   arrange(Estimate)
-
-# coef_df$Term = with(coef_df, reorder(Term, Estimate))
-coef_df %>% 
-  group_by(Type) %>% 
-  mutate(Term = fct_reorder(Term, Estimate, .fun='median')) %>% 
-  ggplot(aes(x = Estimate, y = reorder(Term, Estimate))) +
-  geom_errorbarh(
-    aes(xmin = Estimate - 1.96 * Std.Error,
-        xmax = Estimate + 1.96 * Std.Error),
-    height = 0,
-    color = "black"
-  ) +
-  geom_point(
-    aes(shape = significatif, fill = significatif),
-    size = 3,
-    color = "black"
-  ) +
-  scale_shape_manual(
-    values = c("Oui" = 21, "Non" = 21)
-  ) +
-  scale_fill_manual(
-    values = c("Oui" = "black", "Non" = "white")
-  ) +
-  geom_vline(xintercept = 0, linetype = "dotted", color = "grey", size = 1) +
-  scale_x_continuous(breaks = seq(-100, 100, by = 5)) + 
-  facet_wrap(~ Type, scales = "free", ncol = 2) +
-  labs(
-    x = "Valeur du coefficient",
-    y = "Variable",
-    title = "Coefficients du modèle et intervalles de confiance à 95%",
-    shape = "Significatif",
-    fill = "Significatif"
-  ) +
-  theme_minimal() +
-  theme(
-    axis.text.y = element_text(size = 8),
-    legend.position = "bottom"
-  )
-
-
-
-```
-
-
-
-**Interprétation** 
-
-1️⃣ Ce que modélise exactement ce CLMM
-
-Variable réponse : avis_niv1
-→ variable ordinale à 3 niveaux (Déclin < Stable < Augmentation).
-
-Modèle : Cumulative Link Mixed Model
-→ on modélise la probabilité cumulée d’être dans une catégorie plus élevée.
-
-Effet aléatoire : (1 | email)
-→ chaque répondant a une propension personnelle à répondre plus pessimiste/optimiste
-→ variance = 0.45, non négligeable → bon choix de modèle mixte.
-
-2️⃣ Comment lire un coefficient dans ce type de modèle
-
-👉 Signe du coefficient
-
-positif → augmente la probabilité d’un avis plus favorable (vers Augmentation)
-
-négatif → pousse vers un avis plus défavorable (Déclin)
-
-👉 Attention
-
-Les coefficients sont sur l’échelle du log-odds cumulatif
-
-Leur valeur absolue n’est pas directement intuitive
-
-Les interactions sont centrales ici → les effets simples ne s’interprètent jamais seuls
-
-3️⃣ Effet clé : tendance_shoc_niv1
-
-Tu as codé cette variable comme ordinale polynomiale :
-
-.L = tendance linéaire
-
-.Q = tendance quadratique
-
-Effets principaux
-tendance_shoc_niv1.L  = -32.6 ***
-tendance_shoc_niv1.Q  = +8.2  ***
-
-
-👉 Interprétation
-
-Plus la tendance SHOC est perçue comme négative, plus l’avis est très fortement tiré vers le déclin
-
-L’effet n’est pas linéaire : il y a une courbure importante (Q significatif)
-
-⚠️ MAIS : ces effets sont massivement modulés par les interactions → ils ne valent que pour la modalité de référence de toutes les autres variables.
-
-4️⃣ Effets principaux des espèces (hors interactions)
-
-À lire comme des biais systématiques indépendants de SHOC :
-
-Effets allant vers Augmentation
-
-regimeInsectivore +++
-
-populariteOui +++
-
-detectabiliteForte +++
-
-migrateurOui / Partiel +++
-
-pourcentage_stoc +
-
-sexeH +
-
-👉 Ces espèces (ou répondants) sont structurellement jugés plus positivement
-
-Effets allant vers Déclin
-
-abondance_log ---
-
-gregaireOui ---
-
-fauneFrance ---
-
-👉 Plus une espèce est abondante, grégaire ou bien connue, plus l’avis est sévère
-→ biais classique de baseline shifting / exigence accrue
-
-Effets non significatifs
-
-anciennete
-
-expert
-
-👉 Pas de différence nette d’avis entre experts et non-experts, ni selon l’ancienneté en moyenne
-
-5️⃣ Le cœur du modèle : les interactions avec tendance_shoc_niv1
-
-C’est là que ton modèle devient intéressant scientifiquement.
-
-Exemple clé : abondance
-tendance.L : abondance_log   +++
-tendance.Q : abondance_log   ---
-
-
-👉 Lecture
-
-Quand la tendance SHOC devient négative :
-
-les espèces abondantes sont encore plus pénalisées
-
-effet non linéaire
-→ les répondants semblent dire :
-
-“Si même une espèce abondante décline, alors c’est très grave.”
-
-Popularité
-tendance.L : populariteOui   ---
-tendance.Q : populariteOui   +++
-
-
-👉 Les espèces populaires :
-
-bénéficient d’un effet de seuil
-
-mais subissent une chute brutale quand SHOC est négatif
-
-Régime alimentaire
-tendance.L : Insectivore  ---
-tendance.L : Omnivore     ---
-
-
-👉 Les insectivores (et omnivores) :
-
-sont beaucoup plus sensibles à une tendance SHOC négative
-
-signal perçu comme écologiquement alarmant
-
-Migration
-tendance.L : migrateurPartiel  ---
-
-
-👉 Les migrateurs partiels :
-
-subissent une surpénalisation dès que SHOC se dégrade
-
-Sexe et ancienneté
-tendance.L : sexeH        +
-tendance.L : anciennete  +
-
-
-👉 Les hommes et les répondants expérimentés :
-
-réagissent plus fortement à la dégradation SHOC
-
-mais pas de différence moyenne, seulement dans la réaction au signal
-
-6️⃣ Seuils (thresholds)
-Déclin | Stable        = -14.1
-Stable | Augmentation  = -10.8
-
-
-👉 Ces valeurs indiquent que :
-
-il faut une très forte combinaison d’effets positifs pour atteindre Augmentation
-
-le modèle est asymétrique, avec un biais structurel vers Déclin
-
-👉 Cohérent avec :
-
-une variable réponse déséquilibrée
-
-ou une perception globalement pessimiste
-
-7️⃣ Message scientifique synthétique (si tu dois l’écrire)
-
-Les avis ne dépendent pas seulement de la tendance observée (SHOC), mais de la cohérence perçue entre cette tendance et les caractéristiques écologiques de l’espèce.
-Une dégradation est jugée d’autant plus sévèrement qu’elle concerne une espèce abondante, populaire, insectivore ou migratrice, suggérant un raisonnement fondé sur la plausibilité écologique et la gravité implicite du signal.
-
-### simplifié comme il faut
-
-```{r}
-library(ordinal)
-
-run_clmm_moderators <- function(
-  data,
-  response,
-  focal,
-  moderators,
-  random_effect,
-  link = "logit"
-) {
-
-  models <- list()
-
-  for (mod in moderators) {
-    
-    print(mod)
-    df <- data
-
-    # Centrage automatique si variable numérique
-    if (is.numeric(df[[mod]])) {
-      mod_c <- paste0(mod, "_c")
-      df[[mod_c]] <- scale(df[[mod]], scale = FALSE)
-      mod_term <- mod_c
-    } else {
-      mod_term <- mod
-    }
-
-    # Formule : 1 modérateur à la fois
-    form <- as.formula(
-      paste0(
-        response, " ~ ",
-        focal, " * ", mod_term,
-        " + (1 | ", random_effect, ")"
-      )
-    )
-
-    # Ajustement du modèle
-    models[[mod]] <- clmm(
-      formula = form,
-      data = df,
-      link = link,
-      Hess = TRUE
-    )
-  }
-
-  return(models)
-}
-
-moderateurs <- c(
-  "abondance_log",
-  "popularite",
-  "detectabilite",
-  "regime",
-  # "migrateur",
-  "migrateur_simplifie",
-  "gregaire",
-  "fauneFrance",
-  "pourcentage_stoc",
-  "sexe",
-  "anciennete",
-  "expert",
-  # "fluctuante"
-)
-
-models_mod <- run_clmm_moderators(
-  data = dt1,
-  response = "avis_niv1",
-  focal = "tendance_shoc_niv1",
-  moderators = moderateurs,
-  random_effect = "email"
-)
-
-AICs <- sapply(models_mod, AIC)
-sort(AICs)
-
-library(MuMIn)
-AICcs <- sapply(models_mod, AICc)
-sort(AICcs)
-
-m0 <- clmm(
-  avis_niv1 ~ tendance_shoc_niv1 + (1 | email),
-  data = dt1,
-  link = "logit",
-  Hess = TRUE
-)
-
-AICc(c(m0, models_mod))
-
-```
-
-
-## niv 2
-
-### données
-
-```{r}
-#| include: false
-
-dt2 <- dataset %>% 
-  dplyr::select("email","espece","avis_niv2","migrateur","regime",
-                "detectabilite","gregaire","popularite",
-                "abondance_log","departement","sexe",
-                "anciennete","region","bioregion","expert",
-                "tendances_stoc", "pourcentage_stoc", "fauneFrance",
-                "tendance_shoc_niv2") %>% 
-  filter(avis_niv2 != "Fluctuante",
-         avis_niv2 != "Incertain") %>% 
-  filter(tendance_shoc_niv2 != "Fluctuante",
-         tendance_shoc_niv2 != "Incertain") %>%
-  na.omit()
-
-unique(dt2$avis_niv2)
-
-dt2 <- dt2 %>%
-  mutate(
-    avis_niv2 = factor(
-      avis_niv2,
-      levels = c("Déclin fort", "Déclin modéré à fort", "Déclin modéré", 
-                 "Stable", 
-                 "Augmentation modéré", "Augmentation modéré à fort", "Augmentation fort"),
-      ordered = TRUE
-    ),
-    tendance_shoc_niv2 = factor(
-      tendance_shoc_niv2,
-      levels = c("Déclin fort", "Déclin modéré à fort", "Déclin modéré", 
-                 "Stable", 
-                 "Augmentation modéré", "Augmentation modéré à fort", "Augmentation fort"),
-      ordered = TRUE
-    )
-  ) %>% 
-  na.omit()
-
-dt2 <- dt2 %>%
-  mutate(
-    # popularite    = factor(popularite),
-    # detectabilite = factor(detectabilite),
-    sexe = factor(sexe),
-    expert = factor(expert)
-  )
-```
-
-### aléatoire
-
-```{r}
-#| include: false
-
-m_n2.1 <- clmm(avis_niv2 ~ 1 + (1 | email), data = dt2, link = "logit", Hess = TRUE, na.action = na.omit)
-m_n2.2 <- clmm(avis_niv2 ~ 1 + (1 | region), data = dt2, link = "logit", Hess = TRUE, na.action = na.omit)
-m_n2.3 <- clmm(avis_niv2 ~ 1 + (1 | bioregion), data = dt2, link = "logit", Hess = TRUE, na.action = na.omit)
-m_n2.4 <- clmm(avis_niv2 ~ 1 + (1 | departement), data = dt2, link = "logit", Hess = TRUE, na.action = na.omit)
-m_n2.5 <- clmm(avis_niv2 ~ 1 + (1 | email) + (1 | region), data = dt2, link = "logit", Hess = TRUE, na.action = na.omit)
-m_n2.6 <- clmm(avis_niv2 ~ 1 + (1 | email) + (1 | bioregion), data = dt2, link = "logit", Hess = TRUE, na.action = na.omit)
-m_n2.7 <- clmm(avis_niv2 ~ 1 + (1 | email) + (1 | departement), data = dt2, link = "logit", Hess = TRUE, na.action = na.omit)
-```
-
-```{r}
-#| echo: false
-
-AIC_dt_n2_aleatoire <- as.data.frame(AIC(m_n2.1, m_n2.2, m_n2.3, m_n2.4, m_n2.5, m_n2.6, m_n2.7))
-
-AIC_dt_n2_aleatoire <- AIC_dt_n2_aleatoire %>% 
-  arrange(AIC) ; AIC_dt_n2_aleatoire
-
-summary(m_n2.1)
-```
-
-### base
-
-```{r}
-#| include: false
-m_n2_base <- clmm(avis_niv2 ~ tendance_shoc_niv2 + (1 | email) + (1 | departement), data = dt2, link = "logit", Hess = TRUE)
-```
-
-```{r}
-#| eval: false
-#| include: false
-summary(m_n2_base)
-```
-
-### espece
-
-```{r}
-#| eval: false
-#| include: false
-
-m_n2_esp <- clmm(avis_niv2 ~ tendance_shoc_niv2*espece + (1 | email) + (1 | departement), data = dt2, link = "logit", Hess = TRUE)
-```
-
-```{r}
-#| echo: false
-summary(m_n2_esp)
-```
-
-### trait
-
-```{r}
-#| eval: false
-#| include: false
-
-# abondance ***
-m_n2_trait_2 <- clmm(avis_niv2 ~ tendance_shoc_niv2 + abondance_log + (1 | email) + (1 | departement), 
-                     data = dt2, link = "logit", Hess = TRUE)
-anova(m_n2_trait_2, m_n2_base)
-# m_n2_trait_2int <- clmm(avis_niv2 ~ tendance_shoc_niv2*abondance_log + (1 | email) + (1 | departement), 
-# data = dt2, link = "logit", Hess = TRUE)
-# anova(m_n2_trait_2, m_n2_trait_2int)
-
-# popularite *** int ***
-m_n2_trait_3 <- clmm(avis_niv2 ~ tendance_shoc_niv2 + popularite + (1 | email) + (1 | departement), 
-                     data = dt2, link = "logit", Hess = TRUE)
-anova(m_n2_trait_3, m_n2_base)
-m_n2_trait_3int <- clmm(avis_niv2 ~ tendance_shoc_niv2*popularite + (1 | email) + (1 | departement), 
-                        data = dt2, link = "logit", Hess = TRUE)
-anova(m_n2_trait_3, m_n2_trait_3int) 
-
-# detectabilite *** int ***
-m_n2_trait_4 <- clmm(avis_niv2 ~ tendance_shoc_niv2 + detectabilite + (1 | email) + (1 | departement), 
-                     data = dt2, link = "logit", Hess = TRUE)
-anova(m_n2_trait_4, m_n2_base)
-m_n2_trait_4int <- clmm(avis_niv2 ~ tendance_shoc_niv2*detectabilite + (1 | email) + (1 | departement), 
-                        data = dt2, link = "logit", Hess = TRUE)
-anova(m_n2_trait_4, m_n2_trait_4int) 
-
-# regime ***
-m_n2_trait_5 <- clmm(avis_niv2 ~ tendance_shoc_niv2 + regime + (1 | email) + (1 | departement), 
-                     data = dt2, link = "logit", Hess = TRUE)
-anova(m_n2_trait_5, m_n2_base)
-m_n2_trait_5int <- clmm(avis_niv2 ~ tendance_shoc_niv2*regime + (1 | email) + (1 | departement), 
-                        data = dt2, link = "logit", Hess = TRUE)
-anova(m_n2_trait_5, m_n2_trait_5int)
-
-# migrateur *** int ***
-m_n2_trait_6 <- clmm(avis_niv2 ~ tendance_shoc_niv2 + migrateur + (1 | email) + (1 | departement), data = dt2, link = "logit", Hess = TRUE)
-anova(m_n2_trait_6, m_n2_base)
-m_n2_trait_6int <- clmm(avis_niv2 ~ tendance_shoc_niv2*migrateur + (1 | email) + (1 | departement), data = dt2, link = "logit", Hess = TRUE)
-anova(m_n2_trait_6, m_n2_trait_6int) 
-
-# gregaire *** int ***
-m_n2_trait_7 <- clmm(avis_niv2 ~ tendance_shoc_niv2 + gregaire + (1 | email) + (1 | departement), data = dt2, link = "logit", Hess = TRUE)
-anova(m_n2_trait_7, m_n2_base)
-m_n2_trait_7int <- clmm(avis_niv2 ~ tendance_shoc_niv2*gregaire + (1 | email) + (1 | departement), data = dt2, link = "logit", Hess = TRUE)
-anova(m_n2_trait_7, m_n2_trait_7int) 
-
-# fauneFrance *** int ***
-m_n2_trait_8 <- clmm(avis_niv2 ~ tendance_shoc_niv2 + fauneFrance + (1 | email), data = dt2, link = "logit", Hess = TRUE)
-anova(m_n2_trait_8, m_n2_base)
-m_n2_trait_8int <- clmm(avis_niv2 ~ tendance_shoc_niv2*fauneFrance + (1 | email), data = dt2, link = "logit", Hess = TRUE)
-anova(m_n2_trait_8, m_n2_trait_8int)
-
-# pourcentage_stoc *** int ***
-m_n2_trait_9 <- clmm(avis_niv2 ~ tendance_shoc_niv2 + pourcentage_stoc + (1 | email), data = dt2, link = "logit", Hess = TRUE)
-anova(m_n2_trait_9, m_n2_base)
-m_n2_trait_9int <- clmm(avis_niv2 ~ tendance_shoc_niv2*pourcentage_stoc + (1 | email), data = dt2, link = "logit", Hess = TRUE)
-anova(m_n2_trait_9, m_n2_trait_9int)
-
-# all
-m_n2_trait_all <- clmm(avis_niv2 ~ tendance_shoc_niv2 + 
-                    abondance_log + popularite + detectabilite + regime + migrateur + gregaire + fauneFrance + pourcentage_stoc + 
-                    (1 | email) + (1 | departement), data = dt2, link = "logit", Hess = TRUE)
-# m_n2_trait_allint <- clmm(avis_niv2 ~ tendance_shoc_niv2 + 
-#                     abondance_log + regime + 
-#                       popularite + detectabilite + migrateur + gregaire + fauneFrance + pourcentage_stoc + 
-#                     tendance_shoc_niv2:(popularite + detectabilite + fauneFrance + pourcentage_stoc) + 
-#                     (1 | email) + (1 | departement), data = dt2, link = "logit", Hess = TRUE)
-m_n2_trait_allint_2 <- clmm(avis_niv2 ~ tendance_shoc_niv2 + 
-                    abondance_log + regime + 
-                      popularite + detectabilite + migrateur + gregaire + 
-                    tendance_shoc_niv2:(popularite + migrateur) + 
-                    (1 | email) + (1 | departement), data = dt2, link = "logit", Hess = TRUE)
-m_n2_trait_allint_3 <- clmm(avis_niv2 ~ tendance_shoc_niv2 + 
-                    abondance_log + regime + 
-                      popularite + detectabilite + migrateur + gregaire + 
-                    tendance_shoc_niv2:(popularite + gregaire) + 
-                    (1 | email) + (1 | departement), data = dt2, link = "logit", Hess = TRUE)
-# m_n2_trait_allint_4 <- clmm(avis_niv2 ~ tendance_shoc_niv2 + 
-#                     abondance_log + regime + 
-#                       popularite + detectabilite + migrateur + gregaire + 
-#                     tendance_shoc_niv2:(detectabilite + migrateur) + 
-#                     (1 | email) + (1 | departement), data = dt2, link = "logit", Hess = TRUE)
-# m_n2_trait_allint_5 <- clmm(avis_niv2 ~ tendance_shoc_niv2 + 
-#                     abondance_log + regime + 
-#                       popularite + detectabilite + migrateur + gregaire + 
-#                     tendance_shoc_niv2:(detectabilite + gregaire) + 
-#                     (1 | email) + (1 | departement), data = dt2, link = "logit", Hess = TRUE)
-# m_n2_trait_allint_6 <- clmm(avis_niv2 ~ tendance_shoc_niv2 + 
-#                     abondance_log + regime + 
-#                       popularite + detectabilite + migrateur + gregaire + 
-#                     tendance_shoc_niv2:(migrateur + gregaire) + 
-#                     (1 | email) + (1 | departement), data = dt2, link = "logit", Hess = TRUE)
-m_n2_trait_allint_7 <- clmm(avis_niv2 ~ tendance_shoc_niv2 +
-                    abondance_log + regime +
-                      popularite + detectabilite + migrateur + gregaire + fauneFrance + 
-                    tendance_shoc_niv2:(popularite + fauneFrance) +
-                    (1 | email) + (1 | departement), data = dt2, link = "logit", Hess = TRUE)
-# m_n2_trait_allint_8 <- clmm(avis_niv2 ~ tendance_shoc_niv2 +
-#                     abondance_log + regime +
-#                       popularite + detectabilite + migrateur + gregaire + pourcentage_stoc + 
-#                     tendance_shoc_niv2:(popularite + pourcentage_stoc) + (1 | email) + (1 | departement), data = dt2, link = "logit", Hess = TRUE)
-# m_n2_trait_allint_9 <- clmm(avis_niv2 ~ tendance_shoc_niv2 +
-#                     abondance_log + regime +
-#                       popularite + detectabilite + migrateur + gregaire + fauneFrance + 
-#                     tendance_shoc_niv2:(gregaire + fauneFrance) +
-#                     (1 | email) + (1 | departement), data = dt2, link = "logit", Hess = TRUE)
-# m_n2_trait_allint_10 <- clmm(avis_niv2 ~ tendance_shoc_niv2 +
-#                     abondance_log + regime +
-#                       popularite + detectabilite + migrateur + gregaire + pourcentage_stoc + 
-#                     tendance_shoc_niv2:(gregaire + pourcentage_stoc) +
-#                     (1 | email) + (1 | departement), data = dt2, link = "logit", Hess = TRUE)
-```
-
-```{r}
-#| echo: false
-
-AIC_dt_trait_niv_2 <- as.data.frame(AIC(m_n2_trait_2, m_n2_trait_3, m_n2_trait_4, m_n2_trait_5, m_n2_trait_6,
-    m_n2_trait_3int, m_n2_trait_4int, m_n2_trait_5int, m_n2_trait_6int, m_n2_trait_7int, m_n2_trait_8int, m_n2_trait_9int,
-    m_n2_trait_all, 
-    # m_n2_trait_allint, 
-    m_n2_trait_allint_2, m_n2_trait_allint_3,
-    # m_n2_trait_allint_4, m_n2_trait_allint_5, m_n2_trait_allint_6,
-    m_n2_trait_allint_7 
-    # m_n2_trait_allint_8, m_n2_trait_allint_9, m_n2_trait_allint_10
-    ))
-
-AIC_dt_trait_niv_2 <- AIC_dt_trait_niv_2 %>% 
-  arrange(AIC) ; AIC_dt_trait_niv_2
-
-summary(m_n2_trait_allint_7)
-```
-
-### participant
-
-```{r}
-#| eval: false
-#| include: false
-
-# sexe *** int ***
-m_n2_participant_1 <- clmm(avis_niv2 ~ tendance_shoc_niv2 + sexe + 
-                                (1 | email) + (1 | departement), data = dt2, link = "logit", Hess = TRUE)
-anova(m_n2_participant_1, m_n2_base)
-m_n2_participant_1int <- clmm(avis_niv2 ~ tendance_shoc_niv2*sexe + 
-                                   (1 | email) + (1 | departement), data = dt2, link = "logit", Hess = TRUE)
-anova(m_n2_participant_1, m_n2_participant_1int) 
-
-# anciennete int ***
-m_n2_participant_2 <- clmm(avis_niv2 ~ tendance_shoc_niv2 + anciennete + 
-                                (1 | email) + (1 | departement), data = dt2, link = "logit", Hess = TRUE)
-anova(m_n2_participant_2, m_n2_base)
-m_n2_participant_2int <- clmm(avis_niv2 ~ tendance_shoc_niv2*anciennete + 
-                                   (1 | email) + (1 | departement), data = dt2, link = "logit", Hess = TRUE)
-anova(m_n2_participant_2, m_n2_participant_2int) 
-
-# expert int ***
-m_n2_participant_3 <- clmm(avis_niv2 ~ tendance_shoc_niv2 + expert + 
-                                (1 | email) + (1 | departement), data = dt2, link = "logit", Hess = TRUE)
-anova(m_n2_participant_3, m_n2_base)
-m_n2_participant_3int <- clmm(avis_niv2 ~ tendance_shoc_niv2*expert + 
-                                   (1 | email) + (1 | departement), data = dt2, link = "logit", Hess = TRUE)
-anova(m_n2_participant_3, m_n2_participant_3int) 
-
-# all 
-m_n2_participant_all <- clmm(avis_niv2 ~ tendance_shoc_niv2 +
-                    sexe + anciennete + expert +
-                    (1 | email) + (1 | departement), data = dt2, link = "logit", Hess = TRUE)
-m_n2_participant_allint <- clmm(avis_niv2 ~ tendance_shoc_niv2 +
-                    sexe + anciennete + expert + 
-                    tendance_shoc_niv2:(sexe + anciennete + expert) +
-                    (1 | email) + (1 | departement), data = dt2, link = "logit", Hess = TRUE)
-```
-
-```{r}
-#| echo: false 
-AIC_dt_niv_2_participant <- as.data.frame(AIC(
-  m_n2_base,
-                                m_n2_participant_1, m_n2_participant_2, m_n2_participant_3,
-                                m_n2_participant_1int, m_n2_participant_2int, m_n2_participant_3int,
-                                m_n2_participant_all, m_n2_participant_allint))
-
-AIC_dt_niv_2_participant <- AIC_dt_niv_2_participant %>% 
-  arrange(AIC) ; AIC_dt_niv_2_participant
-
-summary(m_n2_participant_allint)
-```
-
-### plot
-
-```{r}
-#| echo: false
-#| fig-height: 15
-#| fig-width: 10
-
-# dt2 <- dt2 %>%
-#   mutate(
-#     # popularite    = factor(popularite),
-#     # detectabilite = factor(detectabilite),
-#     sexe = factor(sexe),
-#     expert = factor(expert)
-#   )
-
-# fonction ---------------------------------------------------------------------
-
-# p-value 
-
-plot_clmm_predictions_multi_x <- function(
-  models,
-  x_values,
-  subtitle = NULL
-) {
-  emm_all <- purrr::imap_dfr(
-    models,
-    function(model, x_var) {
-      mf <- model.frame(model)
-      if (!x_var %in% names(mf)) {
-        stop(sprintf("La variable '%s' n'est pas dans le modèle.", x_var))
-      }
-      x_is_factor <- is.factor(mf[[x_var]])
-      x_vals <- x_values[[x_var]]
-      emm <- if (x_is_factor) {
-        emmeans(
-          model,
-          as.formula(paste("~ tendance_shoc_niv2 |", x_var)),
-          mode = "latent"
-        )
-      } else {
-        emmeans(
-          model,
-          as.formula(paste("~ tendance_shoc_niv2 |", x_var)),
-          at = setNames(list(x_vals), x_var),
-          mode = "latent"
-        )
-      }
-      emm_summary <- summary(emm, type = "response")
-      emm_summary %>%
-        mutate(
-          probabilite = plogis(emmean),
-          tendance = tendance_shoc_niv2,
-          x_level = factor(.data[[x_var]]),
-          variable = x_var,
-          lower = plogis(asymp.LCL),
-          upper = plogis(asymp.UCL),
-          # Logique pour la significativité (exemple : si l'intervalle de confiance contient 0)
-          significatif = !(asymp.LCL < 0 & asymp.UCL > 0)
-        )
-    }
-  )
-
-  # Créer un graphique par variable
-  plots <- split(emm_all, emm_all$variable) %>%
-    imap(~ {
-      # Déterminer si toutes les interactions pour ce niveau sont non significatives
-      all_non_significatif <- all(!.x$significatif)
-
-      p <- ggplot(.x, aes(
-        x = tendance,
-        y = probabilite,
-        color = x_level,
-        group = x_level
-      )) +
-        # Ruban d'erreur
-        geom_ribbon(
-          aes(ymin = lower, ymax = upper, fill = x_level),
-          alpha = 0.2,
-          color = NA
-        ) +
-        # Lignes continues ou pointillées (selon la significativité globale)
-        geom_line(
-          aes(linetype = ifelse(all_non_significatif, "dashed", "solid")),
-          linewidth = 1.2
-        ) +
-        scale_linetype_manual(values = c("solid" = "solid", "dashed" = "dashed")) +
-        scale_y_continuous(labels = scales::percent, limits = c(0, 1)) +
-        scale_fill_manual(values = scales::hue_pal()(length(unique(.x$x_level))), aesthetics = "fill") +
-        scale_color_manual(values = scales::hue_pal()(length(unique(.x$x_level))), aesthetics = "color") +
-        theme_bw() +
-        theme(
-          axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1),
-          legend.position = "bottom"
-        ) +
-        labs(
-          x = "Tendance SHOC",
-          y = "Probabilité prédite",
-          color = "",
-          fill = "",
-          linetype = ifelse(all_non_significatif, "Non significatif", "Significatif"),
-          title = .y
-        )
-      p
-    })
-
-  # Combiner les graphiques avec patchwork
-  wrap_plots(plots, ncol = 3, nrow = 4) +
-    plot_annotation(subtitle = subtitle) &
-    theme(legend.position = "top")
-}
-
-# plot -------------------------------------------------------------------------
-
-models <- list(
-  # popularite              = m_n2_3int,
-  # detectabilite           = m_n2_4int,
-  # regime                  = m_n2_5int,
-  # migrateur               = m_n2_6int,
-  # gregaire                = m_n2_7int,
-  # fauneFrance             = m_n2_trait_7int,
-  # pourcentage_stoc        = m_n2_trait_8int
-  sexe = m_n2_participant_1int,
-  anciennete = m_n2_participant_2int,
-  expert = m_n2_participant_3int
-)
-
-x_values <- list(
-  # popularite              = NULL,
-  # detectabilite           = NULL,
-  # regime                  = NULL,
-  # migrateur               = NULL,
-  # gregaire                = NULL,
-  # fauneFrance             = c(-1, 0, 2.5),
-  # pourcentage_stoc        = c(-1, 0, 1.5)
-  sexe = NULL,
-  anciennete = c(0, 5, 40),
-  expert = NULL
-)
-
-plot_clmm_predictions_multi_x(
-  models = models,
-  x_values = x_values,
-  subtitle = "Effet de la tendance SHOC selon différentes variables (niveau 2)"
-)
-
-```
-
-### espece + participant
-
-```{r}
-#| eval: false
-#| include: false
-
-m_n2_trait_participant_all <- clmm(avis_niv2 ~ tendance_shoc_niv2 + 
-                    abondance_log + popularite + detectabilite + migrateur + gregaire + regime +  sexe + anciennete + expert + fauneFrance + (1 | email) + (1 | departement), data = dt2, link = "logit", Hess = TRUE)
-
-# m_n2_trait_participant_allint <- clmm(avis_niv2 ~ tendance_shoc_niv2 + 
-#                     abondance_log + popularite + detectabilite + migrateur + gregaire + regime +  sexe + anciennete + expert + fauneFrance + pourcentage_stoc + 
-#                     tendance_shoc_niv2:(popularite + detectabilite + sexe + anciennete + expert + fauneFrance + pourcentage_stoc) + (1 | email) + (1 | departement), data = dt2, link = "logit", Hess = TRUE)
-
-# m_n2_trait_participant_allint_1 <- clmm(avis_niv2 ~ tendance_shoc_niv2 + 
-#                     abondance_log + popularite + detectabilite + migrateur + gregaire + regime +  sexe + anciennete + expert + fauneFrance + pourcentage_stoc + 
-#                     tendance_shoc_niv2:(popularite + detectabilite + sexe + anciennete + expert + fauneFrance) + (1 | email) + (1 | departement), data = dt2, link = "logit", Hess = TRUE)
-
-# m_n2_trait_participant_allint_2 <- clmm(avis_niv2 ~ tendance_shoc_niv2 + 
-#                     abondance_log + popularite + detectabilite + migrateur + gregaire + regime +  sexe + anciennete + expert + fauneFrance + pourcentage_stoc + 
-#                     tendance_shoc_niv2:(popularite + detectabilite + sexe + anciennete + expert + pourcentage_stoc) + (1 | email) + (1 | departement), data = dt2, link = "logit", Hess = TRUE)
-
-# m_n2_trait_participant_allint_3 <- clmm(avis_niv2 ~ tendance_shoc_niv2 + 
-#                     abondance_log + popularite + detectabilite + migrateur + gregaire + regime +  sexe + anciennete + expert + fauneFrance + 
-#                     tendance_shoc_niv2:(popularite + detectabilite + sexe + anciennete + expert) + (1 | email) + (1 | departement), data = dt2, link = "logit", Hess = TRUE)
-
-# m_n2_trait_participant_allint_4 <- clmm(avis_niv2 ~ tendance_shoc_niv2 + 
-#                     abondance_log + popularite + detectabilite + migrateur + gregaire + regime +  sexe + anciennete + expert + pourcentage_stoc + 
-#                     tendance_shoc_niv2:(popularite + detectabilite + sexe + anciennete + expert + pourcentage_stoc) + (1 | email) + (1 | departement), data = dt2, link = "logit", Hess = TRUE)
-
-m_n2_trait_participant_allint_5 <- clmm(avis_niv2 ~ tendance_shoc_niv2 +
-                    abondance_log + popularite + detectabilite + migrateur + gregaire + regime + sexe + anciennete + expert + pourcentage_stoc +
-                    tendance_shoc_niv2:(popularite) + (1 | email) + (1 | departement), data = dt2, link = "logit", Hess = TRUE)
-
-m_n2_trait_participant_allint_6 <- clmm(avis_niv2 ~ tendance_shoc_niv2 +
-                    abondance_log + popularite + detectabilite + migrateur + gregaire + regime + sexe + anciennete + expert +
-                    tendance_shoc_niv2:(popularite + detectabilite) + (1 | email) + (1 | departement), data = dt2, link = "logit", Hess = TRUE)
-
-# m_n2_trait_participant_allint_7 <- clmm(avis_niv2 ~ tendance_shoc_niv2 +
-#                     abondance_log + popularite + detectabilite + migrateur + gregaire + regime + sexe + anciennete +
-#                     tendance_shoc_niv2:(popularite + detectabilite + migrateur) + (1 | email) + (1 | departement), data = dt2, link = "logit", Hess = TRUE)
-
-# m_n2_trait_participant_allint_8 <- clmm(avis_niv2 ~ tendance_shoc_niv2 +
-#                     abondance_log + popularite + detectabilite + migrateur + gregaire + regime + sexe +
-#                     tendance_shoc_niv2:(popularite + detectabilite + migrateur + gregaire) + (1 | email) + (1 | departement), data = dt2, link = "logit", Hess = TRUE)
-
-
-# m_n2_trait_participant_allint_8 <- clmm(avis_niv2 ~ tendance_shoc_niv2 + 
-#                     abondance_log + popularite + detectabilite + migrateur + gregaire + regime +  sexe + anciennete + expert + fauneFrance + 
-#                       tendance_shoc_niv2:(popularite + fauneFrance) + (1 | email) + (1 | departement), data = dt2, link = "logit", Hess = TRUE)
-
-m_n2_trait_participant_allint_9 <- clmm(avis_niv2 ~ tendance_shoc_niv2 +
-                    abondance_log + regime +
-                      popularite + detectabilite + migrateur + gregaire + fauneFrance + sexe + anciennete + expert +
-                    tendance_shoc_niv2:(sexe + anciennete + expert + popularite) +
-                    (1 | email) + (1 | departement), data = dt2, link = "logit", Hess = TRUE)
-
-m_n2_trait_participant_allint_10 <- clmm(avis_niv2 ~ tendance_shoc_niv2 +
-                    abondance_log + regime +
-                      popularite + detectabilite + migrateur + gregaire + fauneFrance + sexe + anciennete + expert +
-                    tendance_shoc_niv2:(sexe + anciennete + expert + fauneFrance) +
-                    (1 | email) + (1 | departement), data = dt2, link = "logit", Hess = TRUE)
-
-m_n2_trait_participant_allint_11 <- clmm(avis_niv2 ~ tendance_shoc_niv2 +
-                    abondance_log + regime +
-                      popularite + detectabilite + migrateur + gregaire + fauneFrance + sexe + anciennete + expert +
-                    tendance_shoc_niv2:(sexe + anciennete + fauneFrance) +
-                    (1 | email) + (1 | departement), data = dt2, link = "logit", Hess = TRUE)
-
-m_n2_trait_participant_allint_12 <- clmm(avis_niv2 ~ tendance_shoc_niv2 +
-                    abondance_log + regime +
-                      popularite + detectabilite + migrateur + gregaire + fauneFrance + sexe + anciennete + expert +
-                    tendance_shoc_niv2:(sexe + fauneFrance) +
-                    (1 | email) + (1 | departement), data = dt2, link = "logit", Hess = TRUE)
-```
-
-```{r}
-#| echo: false
-AIC_dt_trait_niv_2 <- as.data.frame(AIC(
-  m_n2_base,
-                                m_n2_participant_1, m_n2_participant_2, m_n2_participant_3,
-                                m_n2_participant_1int, m_n2_participant_2int,
-                                m_n2_participant_3int,
-                                m_n2_participant_all, 
-                                # m_n2_participant_allint,
-                                m_n2_trait_2, m_n2_trait_3, m_n2_trait_4, m_n2_trait_5, m_n2_trait_6,
-                                m_n2_trait_3int, m_n2_trait_4int, m_n2_trait_5int, m_n2_trait_6int,
-                                m_n2_trait_all, 
-                                # m_n2_trait_allint, 
-                                m_n2_trait_allint_2, m_n2_trait_allint_3,
-                                # m_n2_trait_allint_4, m_n2_trait_allint_5, m_n2_trait_allint_6,
-                                m_n2_trait_allint_7, 
-                                m_n2_trait_participant_all,
-                                # m_n2_trait_participant_allint,
-                                m_n2_trait_participant_allint_5,
-                                m_n2_trait_participant_allint_6,
-                                # m_n2_trait_participant_allint_7,
-                                # m_n2_trait_participant_allint_8, 
-                                m_n2_trait_participant_allint_9, m_n2_trait_participant_allint_10, m_n2_trait_participant_allint_11,
-                                m_n2_trait_participant_allint_12
-                                ))
-
-AIC_dt_trait_niv_2 <- AIC_dt_trait_niv_2 %>% 
-  arrange(AIC) ; AIC_dt_trait_niv_2
-
-summary(m_n2_trait_participant_allint_11)
 ```
 
 # ACP
 
-## niv 1
-
 ```{r}
+#| echo: false
 set.seed(42)
 # n <- 100  # Nombre d'observations
 
@@ -3625,68 +2330,7 @@ La perceptions des participants est relativement indépendantes des variables te
 
 Cela veut dire que les participants ne sont pas influencer pas le types 
 
-## niv 2
-
-```{r}
-set.seed(42)
-# n <- 100  # Nombre d'observations
-
-ACP_dt1 <- dataset %>% 
-  filter(avis_niv1 %in% c("Déclin", "Stable", "Augmentation")) %>% 
-  dplyr::select(avis_niv2,abondance_log,fauneFrance,anciennete,pourcentage_stoc,popularite,detectabilite,
-                regime,migrateur,gregaire,sexe,expert,bioregion) %>% 
-  na.omit()
-
-# 1. Préparation des données : encodage des variables catégorielles
-# On utilise dummy coding pour les variables catégorielles (sauf "avis_niv2")
-ACP_dt_dummy <- ACP_dt1 %>%
-  mutate(across(c(popularite, detectabilite, regime, migrateur, gregaire, sexe, expert, bioregion), as.factor)) %>%
-  fastDummies::dummy_cols(select_columns = c("popularite", "detectabilite", "regime", "migrateur", "gregaire", "sexe",
-                                             "expert", "bioregion")) %>%
-  dplyr::select(-"abondance_log",-"fauneFrance",-"anciennete",-"pourcentage_stoc",-"popularite",-"detectabilite",-"regime",
-                -"migrateur",-"gregaire",-"sexe",-"expert",-"bioregion")
-
-# On sépare les variables continues et les variables catégorielles encodées
-X <- ACP_dt_dummy %>%
-  dplyr::select(-avis_niv2)  # On exclut "avis_niv2" pour l'ACP
-
-# 2. ACP avec FactoMineR
-# On utilise "avis_niv2" comme variable illustrative
-res.pca <- FactoMineR::PCA(X, scale.unit = TRUE, ncp = 5, graph = FALSE)
-
-# 3. Visualisation des résultats
-
-# a) Projection des individus (colorés par "avis_niv2")
-fviz_pca_ind(res.pca,
-             col.ind = as.factor(ACP_dt1$avis_niv2),
-             addEllipses = TRUE,
-             title = "Projection des individus (ACP)")
-
-fviz_pca_ind(res.pca, axes = c(1, 3), col.ind = as.factor(ACP_dt1$avis_niv2), addEllipses = TRUE)
-fviz_pca_ind(res.pca, axes = c(2, 3), col.ind = as.factor(ACP_dt1$avis_niv2), addEllipses = TRUE)
-
-# b) Cercle des corréla# b) Cercle des corréla# b) Cercle des corrélations (variables continues uniquement)
-fviz_pca_var(res.pca,
-             col.var = "black",
-             title = "Cercle des corrélations (variables continues)")
-
-# c) Variance expliquée
-fviz_eig(res.pca,
-         addlines = TRUE,
-         ylim = c(0, 50),
-         title = "Variance expliquée par les composantes principales")
-
-# d) Contribution des variables catégorielles (si besoin)
-# Pour voir la contribution des modalités des variables catégorielles, on peut utiliser :
-fviz_contrib(res.pca, choice = "var", axes = 1)
-fviz_contrib(res.pca, choice = "var", axes = 2)
-```
-
-**Conclusion**
-
-Same que niv 1.
-
-# COLLECTIF
+# INTELLIGENCE COLLECTIVE
 
 ## variables
 
@@ -3800,6 +2444,7 @@ prop.table(tab_chi2_quantile02, margin = 1)
 ## tendances par espece
 
 ```{r}
+#| echo: false
 mean_intel_dt <- mean_intel_dt %>% 
   left_join(tendance_shoc)
 
@@ -3825,411 +2470,16 @@ dt_intel_quantile02
 Pas de correlation entre le tendances moyennes estimées collectivement et la variation (écart-type) dans les réponses
 
 ```{r}
+#| echo: false
 plot(mean_intel_dt$mean_avis_niv1_intel, mean_intel_dt$sd_avis_niv1_intel)
 summary(lm(mean_intel_dt$mean_avis_niv1_intel ~ mean_intel_dt$sd_avis_niv1_intel))
 ```
 
+```{r}
 # save environnement
 
-```{r}
 #| eval: false
 #| include: false
 save.image(file = "SHOC-humain.RData")
 # load("SHOC-humain.RData")
-```
-
-# matrice de corrélation
-
-```{r}
-#| eval: false
-#| include: false
-
-# toutes les variables__________________________________________________________
-
-colnames(dataset)
-
-library(vcd)
-library(corrplot)
-library(Hmisc)
-
-# Fonction robuste pour calculer V de Cramer et p-value
-cramers_v_pval <- function(x, y) {
-  tbl <- table(x, y)
-  if (nrow(tbl) < 2 || ncol(tbl) < 2) return(list(cv = NA, pval = NA))
-
-  test <- tryCatch(
-    {
-      chisq.test(tbl)
-    },
-    error = function(e) NULL
-  )
-
-  if (is.null(test) || any(is.na(test$expected)) || any(test$expected < 5)) {
-    return(list(cv = NA, pval = NA))
-  }
-
-  cv <- suppressWarnings(assocstats(tbl)$cramer)
-  pval <- test$p.value
-  return(list(cv = cv, pval = pval))
-}
-
-# Préparation des données
-X_categ <- dataset[, c("email","espece","detectabilite","departement","participation_stoc","participation_shoc",
-                       "participation_epoc","participation_odj","cocheur","bagueur","sexe","fluctuante",
-                       "tendance_shoc_niv1","tendance_shoc_niv2","tendances_stoc")]
-X_categ <- X_categ[, sapply(X_categ, function(x) is.factor(x) || is.character(x))]
-X_categ <- lapply(X_categ, as.factor)
-X_categ <- as.data.frame(X_categ)
-
-# Calcul des matrices
-vars <- colnames(X_categ)
-n <- length(vars)
-v_matrix <- matrix(NA, nrow = n, ncol = n, dimnames = list(vars, vars))
-p_matrix <- matrix(NA, nrow = n, ncol = n, dimnames = list(vars, vars))
-
-for (i in 1:n) {
-  for (j in i:n) {
-    res <- cramers_v_pval(X_categ[[i]], X_categ[[j]])
-    v_matrix[i, j] <- res$cv^2
-    v_matrix[j, i] <- res$cv^2
-    p_matrix[i, j] <- res$pval
-    p_matrix[j, i] <- res$pval
-  }
-}
-
-# Affichage
-corrplot(v_matrix,
-         method = "color",
-         type = "upper",
-         tl.cex = 0.8,
-         tl.col = "black",
-         p.mat = p_matrix,
-         insig = "label_sig",
-         sig.level = c(0.001, 0.01, 0.05),
-         pch.cex = 0.7,
-         pch.col = "black",
-         addCoef.col = "transparent",
-         na.label = " ")
-
-# subset des variables__________________________________________________________
-
-# colnames(dataset)
-# 
-# # Fonction robuste pour calculer V de Cramer et p-value
-# cramers_v_pval <- function(x, y) {
-#   tbl <- table(x, y)
-#   if (nrow(tbl) < 2 || ncol(tbl) < 2) return(list(cv = NA, pval = NA))
-# 
-#   test <- tryCatch(
-#     {
-#       chisq.test(tbl)
-#     },
-#     error = function(e) NULL
-#   )
-# 
-#   if (is.null(test) || any(is.na(test$expected)) || any(test$expected < 5)) {
-#     return(list(cv = NA, pval = NA))
-#   }
-# 
-#   cv <- suppressWarnings(assocstats(tbl)$cramer)
-#   pval <- test$p.value
-#   return(list(cv = cv, pval = pval))
-# }
-# 
-# cramers_v_pval <- function(x, y) {
-#   tbl <- table(x, y)
-#   if (nrow(tbl) < 2 || ncol(tbl) < 2) return(list(cv = NA, pval = NA))
-# 
-#   # Test du chi² avec simulation si effectifs < 5
-#   if (any(table(x, y) < 5, na.rm = TRUE)) {
-#     test <- chisq.test(tbl, simulate.p.value = TRUE, B = 10000)
-#   } else {
-#     test <- chisq.test(tbl)
-#   }
-# 
-#   cv <- suppressWarnings(assocstats(tbl)$cramer)
-#   pval <- test$p.value
-#   return(list(cv = cv, pval = pval))
-# }
-# 
-# # Préparation des données
-# X_categ <- dataset[, c("email","espece","detectabilite","departement","participation_stoc","participation_shoc",
-#                        "participation_epoc","participation_odj","cocheur","bagueur")]
-# X_categ <- X_categ[, sapply(X_categ, function(x) is.factor(x) || is.character(x))]
-# X_categ <- lapply(X_categ, as.factor)
-# X_categ <- as.data.frame(X_categ)
-# 
-# # Calcul des matrices
-# vars <- colnames(X_categ)
-# n <- length(vars)
-# v_matrix <- matrix(NA, nrow = n, ncol = n, dimnames = list(vars, vars))
-# p_matrix <- matrix(NA, nrow = n, ncol = n, dimnames = list(vars, vars))
-# 
-# for (i in 1:n) {
-#   for (j in i:n) {
-#     res <- cramers_v_pval(X_categ[[i]], X_categ[[j]])
-#     v_matrix[i, j] <- res$cv^2
-#     v_matrix[j, i] <- res$cv^2
-#     p_matrix[i, j] <- res$pval
-#     p_matrix[j, i] <- res$pval
-#   }
-# }
-# 
-# # Affichage
-# corrplot(v_matrix,
-#          method = "color",
-#          type = "upper",
-#          tl.cex = 0.8,
-#          tl.col = "black",
-#          p.mat = p_matrix,
-#          insig = "label_sig",
-#          sig.level = c(0.001, 0.01, 0.05),
-#          pch.cex = 0.7,
-#          pch.col = "black",
-#          addCoef.col = "transparent",
-#          na.label = " ")
-
-```
-
-# niveau 1
-
-```{r}
-#| eval: false
-#| include: false
-
-# 1. Préparation________________________________________________________________
-
-colnames(dataset)
-
-# On force toutes les colonnes en facteur (sauf email déjà en facteur aléatoire)
-vars <- c("detectabilite","participation_stoc","participation_shoc",
-                       "participation_epoc","participation_odj","cocheur","bagueur","sexe","fluctuante",
-                       "tendance_shoc_niv1","tendance_shoc_niv2","tendances_stoc","anciennete")
-
-dataset[vars] <- lapply(dataset[vars], as.factor)
-
-# cible binaire
-dataset$comparaison_niv1 <- as.factor(dataset$comparaison_niv1)
-
-# 2. Formule automatique avec toutes les interactions 2×2_______________________
-
-# variables explicatives
-X <- paste(vars, collapse = " + ")
-
-# # interactions 2 à 2
-# form <- as.formula(
-#   paste("comparaison_niv1 ~ (", X, ")^2 + (1|email) + (1|departement)")
-# )
-
-# sans interaction
-form <- as.formula(
-  paste("comparaison_niv1 ~", X, "+ (1|espece)")
-)
-
-form
-
-# 3. Modèle global GLMM binomial________________________________________________
-
-dataset$anciennete <- as.numeric(as.character(dataset$anciennete))
-
-dt_model <- dataset %>% 
-  na.omit("detectabilite","participation_stoc","participation_shoc",
-                       "participation_epoc","participation_odj","cocheur","bagueur","sexe","fluctuante",
-                       "tendance_shoc_niv1","tendance_shoc_niv2","tendances_stoc","anciennete")
-
-options(na.action = "na.fail")  # obligatoire pour dredge
-
-m_full <- glmer(
-  form,
-  data = dt_model,
-  family = binomial,
-  control = glmerControl(optimizer = "bobyqa")
-)
-
-# 4. Dredge automatique AIC_____________________________________________________
-
-dd <- dredge(m_full, rank = "AIC")
-dd
-
-# 5. Modèle sélectionné (AIC min)_______________________________________________
-best <- get.models(dd, 1)[[1]]
-summary(best)
-
-```
-
-# niveau 2
-
-```{r}
-#| eval: false
-#| include: false
-
-# 1. Préparation________________________________________________________________
-
-colnames(dataset)
-
-# On force toutes les colonnes en facteur (sauf email déjà en facteur aléatoire)
-vars <- c("detectabilite","participation_stoc",
-          "participation_shoc","bagueur")
-
-dataset[vars] <- lapply(dataset[vars], as.factor)
-
-# cible binaire
-dataset$comparaison_niv2 <- as.factor(dataset$comparaison_niv2)
-
-# 2. Formule automatique avec toutes les interactions 2×2_______________________
-
-# variables explicatives
-X <- paste(vars, collapse = " + ")
-
-# # interactions 2 à 2
-# form <- as.formula(
-#   paste("comparaison_niv2 ~ (", X, ")^2 + (1|email) + (1|departement)")
-# )
-
-# sans interaction
-form <- as.formula(
-  paste("comparaison_niv2 ~", X, "+ (1|espece)")
-)
-
-form
-
-# 3. Modèle global GLMM binomial________________________________________________
-
-dt_model <- dataset %>% 
-  na.omit("detectabilite","participation_stoc",
-          "participation_shoc","bagueur")
-
-options(na.action = "na.fail")  # obligatoire pour dredge
-
-m_full <- glmer(
-  form,
-  data = dt_model,
-  family = binomial,
-  control = glmerControl(optimizer = "bobyqa")
-)
-
-# 4. Dredge automatique AIC_____________________________________________________
-
-dd <- dredge(m_full, rank = "AIC")
-dd
-
-# 5. Modèle sélectionné (AIC min)_______________________________________________
-best <- get.models(dd, 1)[[1]]
-summary(best)
-
-```
-
-```{r}
-#| eval: false
-#| include: false
-colnames(dataset)
-m0 <- glmer(comparaison_niv1 ~ 1 + (1 | espece) + (1 | email) + (1 | bioregion), data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
-m1 <- glmer(comparaison_niv1 ~ participation_stoc + (1 | espece) + (1 | email) + (1 | bioregion), data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
-m2 <- glmer(comparaison_niv1 ~ participation_shoc + (1 | espece) + (1 | email) + (1 | bioregion), data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
-m3 <- glmer(comparaison_niv1 ~ participation_epoc + (1 | espece) + (1 | email) + (1 | bioregion), data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
-m4 <- glmer(comparaison_niv1 ~ sexe + (1 | espece) + (1 | email) + (1 | bioregion), data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
-m5 <- glmer(comparaison_niv1 ~ cocheur + (1 | espece) + (1 | email) + (1 | bioregion), data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
-m6 <- glmer(comparaison_niv1 ~ anciennete + (1 | espece) + (1 | email) + (1 | bioregion), data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
-m7 <- glmer(comparaison_niv1 ~ bagueur + (1 | espece) + (1 | email) + (1 | bioregion), data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
-m8 <- glmer(comparaison_niv1 ~ expert + (1 | espece) + (1 | email) + (1 | bioregion), data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
-m9 <- glmer(comparaison_niv1 ~ tendances_stoc + (1 | espece) + (1 | email) + (1 | bioregion), data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
-m10 <- glmer(comparaison_niv1 ~ detectabilite + (1 | espece) + (1 | email) + (1 | bioregion), data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
-m11 <- glmer(comparaison_niv1 ~ gregaire + (1 | espece) + (1 | email) + (1 | bioregion), data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
-m12 <- glmer(comparaison_niv1 ~ fluctuante + (1 | espece) + (1 | email) + (1 | bioregion), data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
-m13 <- glmer(comparaison_niv1 ~ migrateur + (1 | espece) + (1 | email) + (1 | bioregion), data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
-m14 <- glmer(comparaison_niv1 ~ abondance + (1 | espece) + (1 | email) + (1 | bioregion), data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
-m15 <- glmer(comparaison_niv1 ~ regime + (1 | espece) + (1 | email) + (1 | bioregion), data = dataset, family = binomial, control = glmerControl(optimizer = "bobyqa"))
-compare_performance(m0,m1,m2,m3,m4,m5,m6,m7,m8,m9,m10,m11,m12,m13,m14,m15)
-summary(m4)
-
-m4.1 <- glmer(comparaison_niv1 ~ sexe + participation_stoc + (1 | espece) + (1 | email) + (1 | bioregion), data = dataset, family = binomial, 
-              control = glmerControl(optimizer = "bobyqa"))
-m4.2 <- glmer(comparaison_niv1 ~ sexe + participation_shoc + (1 | espece) + (1 | email) + (1 | bioregion), data = dataset, family = binomial, 
-              control = glmerControl(optimizer = "bobyqa"))
-m4.3 <- glmer(comparaison_niv1 ~ sexe + participation_epoc + (1 | espece) + (1 | email) + (1 | bioregion), data = dataset, family = binomial, 
-              control = glmerControl(optimizer = "bobyqa"))
-m4.4 <- glmer(comparaison_niv1 ~ sexe + cocheur + (1 | espece) + (1 | email) + (1 | bioregion), data = dataset, family = binomial, 
-              control = glmerControl(optimizer = "bobyqa"))
-m4.5 <- glmer(comparaison_niv1 ~ sexe + anciennete + (1 | espece) + (1 | email) + (1 | bioregion), data = dataset, family = binomial, 
-              control = glmerControl(optimizer = "bobyqa"))
-m4.6 <- glmer(comparaison_niv1 ~ sexe + bagueur + (1 | espece) + (1 | email) + (1 | bioregion), data = dataset, family = binomial, 
-              control = glmerControl(optimizer = "bobyqa"))
-m4.7 <- glmer(comparaison_niv1 ~ sexe + expert + (1 | espece) + (1 | email) + (1 | bioregion), data = dataset, family = binomial, 
-              control = glmerControl(optimizer = "bobyqa"))
-m4.8 <- glmer(comparaison_niv1 ~ sexe + tendances_stoc + (1 | espece) + (1 | email) + (1 | bioregion), data = dataset, family = binomial, 
-              control = glmerControl(optimizer = "bobyqa"))
-m4.9 <- glmer(comparaison_niv1 ~ sexe + detectabilite + (1 | espece) + (1 | email) + (1 | bioregion), data = dataset, family = binomial, 
-              control = glmerControl(optimizer = "bobyqa"))
-m4.10 <- glmer(comparaison_niv1 ~ sexe + gregaire + (1 | espece) + (1 | email) + (1 | bioregion), data = dataset, family = binomial, 
-              control = glmerControl(optimizer = "bobyqa"))
-m4.11 <- glmer(comparaison_niv1 ~ sexe + fluctuante + (1 | espece) + (1 | email) + (1 | bioregion), data = dataset, family = binomial, 
-              control = glmerControl(optimizer = "bobyqa"))
-m4.12 <- glmer(comparaison_niv1 ~ sexe + migrateur + (1 | espece) + (1 | email) + (1 | bioregion), data = dataset, family = binomial, 
-              control = glmerControl(optimizer = "bobyqa"))
-m4.13 <- glmer(comparaison_niv1 ~ sexe + abondance + (1 | espece) + (1 | email) + (1 | bioregion), data = dataset, family = binomial, 
-              control = glmerControl(optimizer = "bobyqa"))
-m4.14 <- glmer(comparaison_niv1 ~ sexe + regime + (1 | espece) + (1 | email) + (1 | bioregion), data = dataset, family = binomial, 
-              control = glmerControl(optimizer = "bobyqa"))
-compare_performance(m4.1,m4.2,m4.3,m4.4,m4.5,m4.6,m4.7,m4.8,m4.9,m4.10,m4.11,m4.12,m4.13,m4.14)
-summary(m4.14)
-
-m4.14.1 <- glmer(comparaison_niv1 ~ sexe + regime + participation_stoc + (1 | espece) + (1 | email) + (1 | bioregion), data = dataset, family = binomial, 
-              control = glmerControl(optimizer = "bobyqa"))
-m4.14.2 <- glmer(comparaison_niv1 ~ sexe + regime + participation_shoc + (1 | espece) + (1 | email) + (1 | bioregion), data = dataset, family = binomial, 
-              control = glmerControl(optimizer = "bobyqa"))
-m4.14.3 <- glmer(comparaison_niv1 ~ sexe + regime + participation_epoc + (1 | espece) + (1 | email) + (1 | bioregion), data = dataset, family = binomial, 
-              control = glmerControl(optimizer = "bobyqa"))
-m4.14.4 <- glmer(comparaison_niv1 ~ sexe + regime + cocheur + (1 | espece) + (1 | email) + (1 | bioregion), data = dataset, family = binomial, 
-              control = glmerControl(optimizer = "bobyqa"))
-m4.14.5 <- glmer(comparaison_niv1 ~ sexe + regime + anciennete + (1 | espece) + (1 | email) + (1 | bioregion), data = dataset, family = binomial, 
-              control = glmerControl(optimizer = "bobyqa"))
-m4.14.6 <- glmer(comparaison_niv1 ~ sexe + regime + bagueur + (1 | espece) + (1 | email) + (1 | bioregion), data = dataset, family = binomial, 
-              control = glmerControl(optimizer = "bobyqa"))
-m4.14.7 <- glmer(comparaison_niv1 ~ sexe + regime + expert + (1 | espece) + (1 | email) + (1 | bioregion), data = dataset, family = binomial, 
-              control = glmerControl(optimizer = "bobyqa"))
-m4.14.8 <- glmer(comparaison_niv1 ~ sexe + regime + tendances_stoc + (1 | espece) + (1 | email) + (1 | bioregion), data = dataset, family = binomial, 
-              control = glmerControl(optimizer = "bobyqa"))
-m4.14.9 <- glmer(comparaison_niv1 ~ sexe + regime + detectabilite + (1 | espece) + (1 | email) + (1 | bioregion), data = dataset, family = binomial, 
-              control = glmerControl(optimizer = "bobyqa"))
-m4.14.10 <- glmer(comparaison_niv1 ~ sexe + regime + gregaire + (1 | espece) + (1 | email) + (1 | bioregion), data = dataset, family = binomial, 
-              control = glmerControl(optimizer = "bobyqa"))
-m4.14.11 <- glmer(comparaison_niv1 ~ sexe + regime + fluctuante + (1 | espece) + (1 | email) + (1 | bioregion), data = dataset, family = binomial, 
-              control = glmerControl(optimizer = "bobyqa"))
-m4.14.12 <- glmer(comparaison_niv1 ~ sexe + regime + migrateur + (1 | espece) + (1 | email) + (1 | bioregion), data = dataset, family = binomial, 
-              control = glmerControl(optimizer = "bobyqa"))
-m4.14.13 <- glmer(comparaison_niv1 ~ sexe + regime + abondance + (1 | espece) + (1 | email) + (1 | bioregion), data = dataset, family = binomial, 
-              control = glmerControl(optimizer = "bobyqa"))
-compare_performance(m4.14.1,m4.14.2,m4.14.3,m4.14.4,m4.14.5,m4.14.6,m4.14.7,m4.14.8,m4.14.9,m4.14.10,m4.14.11,m4.14.11,m4.14.13)
-summary(m4.14.5)
-
-m4.14.5.1 <- glmer(comparaison_niv1 ~ sexe + regime + anciennete + (1 | espece) + (1 | email) + (1 | bioregion), data = dataset, family = binomial, 
-              control = glmerControl(optimizer = "bobyqa"))
-m4.14.5.2 <- glmer(comparaison_niv1 ~ sexe + regime + anciennete + participation_stoc + (1 | espece) + (1 | email) + (1 | bioregion), data = dataset, family = binomial, 
-              control = glmerControl(optimizer = "bobyqa"))
-m4.14.5.3 <- glmer(comparaison_niv1 ~ sexe + regime + anciennete + participation_shoc + (1 | espece) + (1 | email) + (1 | bioregion), data = dataset, family = binomial, 
-              control = glmerControl(optimizer = "bobyqa"))
-m4.14.5.4 <- glmer(comparaison_niv1 ~ sexe + regime + anciennete + participation_epoc + (1 | espece) + (1 | email) + (1 | bioregion), data = dataset, family = binomial, 
-              control = glmerControl(optimizer = "bobyqa"))
-m4.14.5.5 <- glmer(comparaison_niv1 ~ sexe + regime + anciennete + cocheur + (1 | espece) + (1 | email) + (1 | bioregion), data = dataset, family = binomial, 
-              control = glmerControl(optimizer = "bobyqa"))
-m4.14.5.6 <- glmer(comparaison_niv1 ~ sexe + regime + anciennete + bagueur + (1 | espece) + (1 | email) + (1 | bioregion), data = dataset, family = binomial, 
-              control = glmerControl(optimizer = "bobyqa"))
-m4.14.5.7 <- glmer(comparaison_niv1 ~ sexe + regime + anciennete + expert + (1 | espece) + (1 | email) + (1 | bioregion), data = dataset, family = binomial, 
-              control = glmerControl(optimizer = "bobyqa"))
-m4.14.5.8 <- glmer(comparaison_niv1 ~ sexe + regime + anciennete + tendances_stoc + (1 | espece) + (1 | email) + (1 | bioregion), data = dataset, family = binomial, 
-              control = glmerControl(optimizer = "bobyqa"))
-m4.14.5.9 <- glmer(comparaison_niv1 ~ sexe + regime + anciennete + detectabilite + (1 | espece) + (1 | email) + (1 | bioregion), data = dataset, family = binomial, 
-              control = glmerControl(optimizer = "bobyqa"))
-m4.14.5.10 <- glmer(comparaison_niv1 ~ sexe + regime + anciennete + gregaire + (1 | espece) + (1 | email) + (1 | bioregion), data = dataset, family = binomial, 
-              control = glmerControl(optimizer = "bobyqa"))
-m4.14.5.11 <- glmer(comparaison_niv1 ~ sexe + regime + anciennete + fluctuante + (1 | espece) + (1 | email) + (1 | bioregion), data = dataset, family = binomial, 
-              control = glmerControl(optimizer = "bobyqa"))
-m4.14.5.12 <- glmer(comparaison_niv1 ~ sexe + regime + anciennete + migrateur + (1 | espece) + (1 | email) + (1 | bioregion), data = dataset, family = binomial, 
-              control = glmerControl(optimizer = "bobyqa"))
-m4.14.5.13 <- glmer(comparaison_niv1 ~ sexe + regime + anciennete + abondance + (1 | espece) + (1 | email) + (1 | bioregion), data = dataset, family = binomial, 
-              control = glmerControl(optimizer = "bobyqa"))
-compare_performance(m4.14.5,m4.14.5.1,m4.14.5.2,m4.14.5.3,m4.14.5.4,m4.14.5.5,m4.14.5.6,m4.14.5.7,m4.14.5.8,m4.14.5.9,
-                    m4.14.5.10,m4.14.5.11,m4.14.5.12,m4.14.5.13)
-summary(m4.14.5)
-
 ```
